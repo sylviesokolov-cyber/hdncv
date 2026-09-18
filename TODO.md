@@ -12,7 +12,7 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [x] Initial game shell
 - [x] Simulation/UI boundary docs
 - [x] Versioned save schema placeholder
-- [ ] GitHub Pages deployment path verified
+- [~] GitHub Pages deployment path verified (workflow added; needs repo-owner switch to "GitHub Actions" Pages source)
 
 ## M1 — Deterministic simulation kernel
 
