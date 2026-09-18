@@ -63,11 +63,11 @@ Legend: [ ] not started · [~] in progress · [x] complete
 ## M4 — Primitive survival
 
 > Initial resource pools and automatic basic-need fulfillment are now wired into the simulation; gathering/production still remain.
-- [ ] Resource types
+- [x] Resource types
 - [x] Food
 - [x] Water
-- [ ] Wood
-- [ ] Stone
+- [x] Wood
+- [x] Stone
 - [ ] Gathering
 - [ ] Hunting
 - [ ] Carrying/storage
@@ -99,8 +99,8 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Workshop
 - [ ] Farm
 - [ ] Well/water infrastructure
-- [ ] Building costs
-- [ ] Construction jobs
+- [x] Building costs
+- [x] Construction jobs
 - [ ] Roads/paths
 - [ ] Population dashboard
 - [ ] Camp/village visual progression
@@ -187,7 +187,7 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Simulation LOD/importance rules if needed
 - [ ] Save compression/versioning if needed
 - [ ] Accessibility pass
-- [ ] Responsive UI
+- [x] Responsive UI
 - [ ] Onboarding/tutorial
 - [ ] Balance pass
 - [ ] Long-session soak tests
