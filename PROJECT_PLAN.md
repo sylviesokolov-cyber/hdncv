@@ -196,3 +196,12 @@ Do not measure progress only by lines of code or number of screens.
 
 ## Scope guardrails
 Defer multiplayer, server economies, complex diplomacy, giant combat systems, fully autonomous social AI and advanced 3D rendering until the core life/civilization loop is stable and enjoyable.
+## Founder genetic technology branch
+
+Genetic progression is a separate technology branch. Civilization research can unlock genetic technologies, but deliberate genetic improvements are applied only to the immortal King/Queen founders. Ordinary NPCs cannot independently create genetic improvements through breeding or research.
+
+Founder genetic upgrades can be active player-selected modifications or passive founder effects. Founder-applied traits can propagate through descendants according to explicit inheritance rules and must retain provenance. Direct founder offspring are a distinct royal genetic tier; ordinary NPC × NPC offspring receive only ordinary inherited genetics. Royal descendants can pass founder-derived traits they carry, subject to inheritance rules.
+
+The simulation must distinguish genetic inheritance from genetic advancement. Natural variation may exist, but it must not unlock new genetic technology.
+
+The player should be able to inspect the provenance of inherited traits and the genetic technologies responsible for founder modifications.
