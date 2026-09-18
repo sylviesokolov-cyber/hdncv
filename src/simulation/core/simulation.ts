@@ -1,4 +1,4 @@
-import type {Citizen, Genome, LifeStage, SimulationState, Sex} from "./types";
+import type {Citizen, CitizenId, Genome, GeneticTechnology, LifeStage, SimulationState, Sex} from "./types";
 import {SeededRng} from "./rng";
 
 const stage=(age:number):LifeStage=>age<2?"infant":age<8?"child":age<15?"adolescent":age<40?"adult":age<65?"matureAdult":"elder";
@@ -26,7 +26,7 @@ export class Simulation {
   createChild(parentA:Citizen,parentB:Citizen):Citizen {
     if(parentA.sex===parentB.sex)throw new Error("Founders need opposite-sex breeding for this MVP.");
     if(parentA.deathTick!==undefined||parentB.deathTick!==undefined)throw new Error("A deceased citizen cannot reproduce.");
-    const childSex=this.rng.next()<0.5?"male":"female" as Sex;
+    const childSex:Sex=this.rng.next()<0.5?"male":"female";
     const choose=(a:number,b:number)=>Math.round((a+b)/2)+this.rng.int(-3,3);
     const founderOrigin=parentA.founder?(parentA.genome.founderOrigin):parentB.founder?(parentB.genome.founderOrigin):undefined;
     const ids=parentA.founder||parentB.founder?parentA.founder?parentA.genome.geneticTechIds:parentB.genome.geneticTechIds:[];
