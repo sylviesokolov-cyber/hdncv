@@ -107,8 +107,9 @@ export class Simulation {
     this.state.chronicle.push(partnerA.name+" and "+partnerB.name+" married.");
   }
 
-  getSiblings(citizen:Citizen):Citizen[] {
-    const state=this.state.citizens[citizen.id];
+  getSiblings(citizen:Citizen|CitizenId):Citizen[] {
+    const id=typeof citizen==="string"?citizen:citizen.id;
+    const state=this.state.citizens[id];
     if(!state)return [];
 
     const parentIds=new Set(state.parentIds);
@@ -117,7 +118,7 @@ export class Simulation {
     );
   }
 
-  getAncestors(citizen:Citizen):Citizen[] {
+  getAncestors(citizen:Citizen|CitizenId):Citizen[] {
     const result:Citizen[]=[];
     const seen=new Set<CitizenId>();
     const visit=(id:CitizenId)=>{
@@ -131,11 +132,11 @@ export class Simulation {
         visit(parentId);
       }
     };
-    visit(citizen.id);
+    visit(typeof citizen==="string"?citizen:citizen.id);
     return result;
   }
 
-  getDescendants(citizen:Citizen):Citizen[] {
+  getDescendants(citizen:Citizen|CitizenId):Citizen[] {
     const result:Citizen[]=[];
     const seen=new Set<CitizenId>();
     const visit=(id:CitizenId)=>{
@@ -149,7 +150,7 @@ export class Simulation {
         visit(childId);
       }
     };
-    visit(citizen.id);
+    visit(typeof citizen==="string"?citizen:citizen.id);
     return result;
   }
   createChild(parentA:Citizen,parentB:Citizen):Citizen {
@@ -173,8 +174,8 @@ export class Simulation {
   }
   canReproduce(citizen:Citizen):boolean {
     return citizen.deathTick===undefined &&
-      (citizen.founder || (citizen.ageYears>=MIN_REPRODUCTIVE_AGE && citizen.ageYears<=MAX_REPRODUCTIVE_AGE)) &&
-      (citizen.founder || citizen.lifeStage==="adult" || citizen.lifeStage==="matureAdult");
+      citizen.ageYears>=MIN_REPRODUCTIVE_AGE && citizen.ageYears<=MAX_REPRODUCTIVE_AGE &&
+      (citizen.lifeStage==="adult" || citizen.lifeStage==="matureAdult");
   }
 
   conceive(mother:Citizen,father:Citizen):Pregnancy {
