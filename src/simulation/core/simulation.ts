@@ -198,11 +198,17 @@ export class Simulation {
     if(c.lifeStage!=="adult"&&c.lifeStage!=="matureAdult")throw new Error("Only adult citizens can be assigned specialist work.");
   }
 
-  estimateBuildYears(workRequired:number,workerCount:number):number { return workerCount>0?Math.max(1,Math.ceil(workRequired/(workerCount*3))):Infinity; }\n\n  startBuilding(citizen:Citizen,buildingId:string,name:string,description:string,workRequired=12):BuildingProject {
+  estimateBuildYears(workRequired:number,workerCount:number):number { return workerCount>0?Math.max(1,Math.ceil(workRequired/(workerCount*3))):Infinity; }
+
+  startBuilding(citizen:Citizen,buildingId:string,name:string,description:string,workRequired=12):BuildingProject {
     this.requireAdult(citizen);
     const existing=this.state.buildings.find(b=>b.id===buildingId&&b.completedTick===undefined);
     const project=existing??{id:buildingId,name,description,workRequired,workDone:0,startedTick:this.state.tick,workerIds:[]};
-    if(!existing){\n      const woodCost=buildingId==="shelter"?10:5, stoneCost=buildingId==="shelter"?4:2;\n      if(this.state.resources.wood<woodCost||this.state.resources.stone<stoneCost)throw new Error("Not enough materials to start this building.");\n      this.state.resources.wood-=woodCost;this.state.resources.stone-=stoneCost;this.state.buildings.push(project);\n    }
+    if(!existing){
+      const woodCost=buildingId==="shelter"?10:5, stoneCost=buildingId==="shelter"?4:2;
+      if(this.state.resources.wood<woodCost||this.state.resources.stone<stoneCost)throw new Error("Not enough materials to start this building.");
+      this.state.resources.wood-=woodCost;this.state.resources.stone-=stoneCost;this.state.buildings.push(project);
+    }
     if(!project.workerIds.includes(citizen.id))project.workerIds.push(citizen.id);
     this.setOrder(citizen,"build","Building "+name);
     return project;
