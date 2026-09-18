@@ -94,9 +94,9 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Production diagnostics
 
 ## M6 — Settlement growth
-- [ ] Hut/house
-- [ ] Storage building
-- [ ] Workshop
+- [~] Hut/house
+- [~] Storage building
+- [~] Workshop
 - [ ] Farm
 - [ ] Well/water infrastructure
 - [x] Building costs
@@ -108,10 +108,10 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Long-running population test
 
 ## M7 — Technology and education
-- [ ] Technology schema
-- [ ] Prerequisites
-- [ ] Research project schema
-- [ ] Fire/tools technology
+- [x] Technology schema
+- [x] Prerequisites
+- [x] Research project schema
+- [x] Fire/tools technology
 - [ ] Agriculture
 - [ ] Pottery/storage
 - [ ] Writing/calendar
@@ -121,7 +121,7 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Apprenticeships
 - [ ] Advanced professions
 - [ ] Technology UI
-- [ ] Research queue
+- [x] Research queue
 
 ## M8 — Exploration and resource nodes
 - [ ] World regions
