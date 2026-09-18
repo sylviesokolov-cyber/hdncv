@@ -9,4 +9,47 @@ describe("simulation kernel",()=>{
 
  it("keeps founders immortal while descendants age and can die",()=>{const s=new Simulation(2);const c=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);c.genome.longevity=1;s.advance(2);expect(s.state.citizens.c_king.deathTick).toBeUndefined();expect(s.state.citizens.c_queen.deathTick).toBeUndefined();expect(c.deathTick).toBeDefined();});
  it("allows genetic technology only on founders and propagates its provenance",()=>{const s=new Simulation(3);const tech={id:"longevity-1",name:"Enhanced Longevity",description:"",cost:10,mode:"activeFounder" as const,prerequisiteIds:[]};s.applyFounderGeneticTech(s.state.citizens.c_king.id,tech);const c=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);expect(()=>s.applyFounderGeneticTech(c.id,tech)).toThrow();expect(c.genome.geneticTechIds).toContain("longevity-1");expect(c.royalGeneticHeritage).toBe(true);});
+ it("supports deterministic pregnancy and birth",()=>{
+   const s=new Simulation(6);
+   const mother=s.state.citizens.c_queen;
+   const father=s.state.citizens.c_king;
+   const pregnancy=s.conceive(mother,father);
+   expect(pregnancy.conceptionTick).toBe(0);
+   expect(pregnancy.dueTick).toBe(1);
+   expect(mother.pregnancy).toEqual(pregnancy);
+   expect(s.livingCitizens).toHaveLength(2);
+   s.advance(1);
+   const children=s.getDescendants(mother.id);
+   expect(children).toHaveLength(1);
+   expect(children[0].birthTick).toBe(1);
+   expect(children[0].ageYears).toBe(0);
+   expect(children[0].founder).toBe(false);
+   expect(children[0].parentIds).toEqual([mother.id,father.id]);
+   expect(mother.pregnancy).toBeUndefined();
+   expect(s.state.chronicle.some(entry=>entry.includes("was born"))).toBe(true);
+ });
+
+ it("rejects invalid pregnancy attempts",()=>{
+   const s=new Simulation(7);
+   const mother=s.state.citizens.c_queen;
+   const father=s.state.citizens.c_king;
+   mother.ageYears=10;
+   mother.lifeStage="child";
+   expect(()=>s.conceive(mother,father)).toThrow();
+   mother.ageYears=25;
+   mother.lifeStage="adult";
+   s.conceive(mother,father);
+   expect(()=>s.conceive(mother,father)).toThrow();
+ });
+
+ it("keeps ordinary descendants mortal through pregnancy birth",()=>{
+   const s=new Simulation(8);
+   const child=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);
+   child.ageYears=0;
+   child.lifeStage="infant";
+   expect(child.founder).toBe(false);
+   expect(s.state.citizens.c_king.founder).toBe(true);
+   expect(s.state.citizens.c_queen.founder).toBe(true);
+ });
+
 });
