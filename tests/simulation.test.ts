@@ -17,3 +17,17 @@ describe("simulation kernel",()=>{
 });
 
 function simOrder(order:{kind:string;label:string},kind:string,label:string){expect(order.kind).toBe(kind);expect(order.label).toBe(label);return true;}
+
+
+describe("yearly dynasty events",()=>{
+  it("creates a deterministic event and resolves a choice with consequences",()=>{
+    const s=new Simulation(5);
+    s.advance(2);
+    expect(s.state.activeEvent?.id).toBe("stranger-at-fire");
+    const food=s.state.resources.food;
+    s.resolveEvent("welcome");
+    expect(s.state.activeEvent).toBeUndefined();
+    expect(s.state.resources.food).toBe(food-6);
+    expect(s.state.chronicle.at(-1)).toContain("welcomed a traveler");
+  });
+});
