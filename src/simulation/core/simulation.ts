@@ -23,6 +23,64 @@ export class Simulation {
   }
   advance(years=1){for(let y=0;y<years;y++){this.state.tick++; for(const c of Object.values(this.state.citizens)){if(c.deathTick!==undefined)continue;if(c.founder)continue;c.ageYears++;c.lifeStage=stage(c.ageYears);c.hunger=Math.min(100,c.hunger+4);c.thirst=Math.min(100,c.thirst+5);c.fatigue=Math.min(100,c.fatigue+3);if(c.ageYears>c.genome.longevity){c.deathTick=this.state.tick;c.health=0;this.state.chronicle.push(c.name+" died at age "+c.ageYears+".");}}}}
   get livingCitizens(){return Object.values(this.state.citizens).filter(c=>c.deathTick===undefined);}
+
+  marry(partnerA:Citizen,partnerB:Citizen):void {
+    if(partnerA.id===partnerB.id)throw new Error("A citizen cannot marry themselves.");
+    if(partnerA.sex===partnerB.sex)throw new Error("Marriage requires opposite-sex partners in this MVP.");
+    if(partnerA.deathTick!==undefined||partnerB.deathTick!==undefined)throw new Error("A deceased citizen cannot marry.");
+    if(partnerA.spouseId||partnerB.spouseId)throw new Error("A citizen who already has a spouse cannot marry.");
+    partnerA.spouseId=partnerB.id;
+    partnerB.spouseId=partnerA.id;
+    this.state.chronicle.push(partnerA.name+" and "+partnerB.name+" married.");
+  }
+
+  getSiblings(citizenId:CitizenId):Citizen[] {
+    const citizen=this.state.citizens[citizenId];
+    if(!citizen)return [];
+    const siblingIds=new Set<CitizenId>();
+    for(const parentId of citizen.parentIds){
+      for(const childId of this.state.citizens[parentId]?.childIds??[]){
+        if(childId!==citizenId)siblingIds.add(childId);
+      }
+    }
+    return [...siblingIds].map(id=>this.state.citizens[id]).filter((c):c is Citizen=>Boolean(c));
+  }
+
+  getAncestors(citizenId:CitizenId):Citizen[] {
+    const result:Citizen[]=[];
+    const seen=new Set<CitizenId>();
+    const visit=(id:CitizenId)=>{
+      const citizen=this.state.citizens[id];
+      if(!citizen)return;
+      for(const parentId of citizen.parentIds){
+        if(seen.has(parentId))continue;
+        seen.add(parentId);
+        const parent=this.state.citizens[parentId];
+        if(parent)result.push(parent);
+        visit(parentId);
+      }
+    };
+    visit(citizenId);
+    return result;
+  }
+
+  getDescendants(citizenId:CitizenId):Citizen[] {
+    const result:Citizen[]=[];
+    const seen=new Set<CitizenId>();
+    const visit=(id:CitizenId)=>{
+      const citizen=this.state.citizens[id];
+      if(!citizen)return;
+      for(const childId of citizen.childIds){
+        if(seen.has(childId))continue;
+        seen.add(childId);
+        const child=this.state.citizens[childId];
+        if(child)result.push(child);
+        visit(childId);
+      }
+    };
+    visit(citizenId);
+    return result;
+  }
   createChild(parentA:Citizen,parentB:Citizen):Citizen {
     if(parentA.sex===parentB.sex)throw new Error("Founders need opposite-sex breeding for this MVP.");
     if(parentA.deathTick!==undefined||parentB.deathTick!==undefined)throw new Error("A deceased citizen cannot reproduce.");
