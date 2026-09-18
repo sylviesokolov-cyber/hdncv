@@ -47,15 +47,15 @@ Legend: [ ] not started · [~] in progress · [x] complete
 ## M3 — Families and genetics
 - [x] Parent references
 - [x] Child queries
-- [ ] Sibling relationships
-- [ ] Spouse/partner relationship
+- [x] Sibling relationships
+- [x] Spouse/partner relationship
 - [ ] Household model
 - [x] Compact genome
 - [x] Trait inheritance
 - [x] Trait variation
 - [ ] Fertility
 - [ ] Pregnancy/birth flow
-- [ ] Genealogy queries
+- [x] Genealogy queries
 - [ ] Family-tree UI
 - [x] Genetics UI
 - [x] Inheritance tests
