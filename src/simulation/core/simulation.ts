@@ -248,6 +248,18 @@ export class Simulation {
   }
 
   getIdleWorkers():Citizen[]{return this.livingCitizens.filter(c=>c.lifeStage==="adult"||c.lifeStage==="matureAdult").filter(c=>!c.order||c.order.kind==="idle");}
+
+  getAvailableWorkers():Citizen[]{
+    return this.livingCitizens
+      .filter(c=>(c.lifeStage==="adult"||c.lifeStage==="matureAdult") && (!c.order || c.order.kind==="idle" || c.order.kind==="work"))
+      .sort((a,b)=>a.id.localeCompare(b.id));
+  }
+
+  startBuildingForAvailableWorker(buildingId:string,name:string,description:string,workRequired=12):BuildingProject {
+    const worker=this.getAvailableWorkers()[0];
+    if(!worker)throw new Error("No free worker is available for this building.");
+    return this.startBuilding(worker,buildingId,name,description,workRequired);
+  }
   getActiveBuilders(projectId:string):Citizen[]{const p=this.state.buildings.find(x=>x.id===projectId);return p?p.workerIds.map(id=>this.state.citizens[id]).filter(Boolean):[];}
   getActiveResearchers(projectId:string):Citizen[]{const p=this.state.researchProjects.find(x=>x.id===projectId);return p?p.researcherIds.map(id=>this.state.citizens[id]).filter(Boolean):[];}
 
