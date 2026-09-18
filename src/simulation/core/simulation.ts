@@ -76,7 +76,8 @@ export class Simulation {
       c.job="Worker";
       c.order={kind:"work",label:"Worker",startedTick:this.state.tick};
     }
-    const workers=this.livingCitizens.filter(c=>c.job==="Worker" && c.order?.kind==="work");
+  }
+
   private processWorkerProduction():void {
     const workers=this.livingCitizens.filter(c=>c.job==="Worker" && c.order?.kind==="work");
     const cycle=this.state.tick%4;
