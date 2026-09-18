@@ -1,4 +1,4 @@
-import type {Citizen,CitizenId,Genome,GeneticTechnology,LifeStage,Pregnancy,SimulationState,Sex,CitizenOrder,OrderKind} from "./types";
+import type {Citizen,CitizenId,Genome,GeneticTechnology,LifeStage,Pregnancy,SimulationState,Sex,CitizenOrder,OrderKind,BuildingProject,ResearchDefinition,ResearchProject} from "./types";
 import {SeededRng} from "./rng";
 
 const stage=(age:number):LifeStage=>age<2?"infant":age<8?"child":age<15?"adolescent":age<40?"adult":age<65?"matureAdult":"elder";
