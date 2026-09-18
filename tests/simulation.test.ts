@@ -52,4 +52,6 @@ describe("simulation kernel",()=>{
    expect(s.state.citizens.c_queen.founder).toBe(true);
  });
 
+ it("supports commands, snapshots, scheduler, and survival actions",()=>{const s=new Simulation(10);const king=s.state.citizens.c_king;const before=s.snapshot();expect(s.scheduler.size).toBe(1);const events=s.dispatch({type:"gather",citizenId:king.id,resource:"food"});expect(events[0].type).toBe("ResourceGathered");expect(s.state.resources.food).toBe(26);s.dispatch({type:"lightFire",citizenId:king.id});s.dispatch({type:"buildShelter",citizenId:king.id});expect(s.state.settlement.fireLit).toBe(true);expect(s.state.settlement.shelterLevel).toBe(1);s.dispatch({type:"advance",years:1});expect(s.state.tick).toBe(1);s.restore(before);expect(s.state.tick).toBe(0);expect(s.state.resources.food).toBe(20);});
+
 });

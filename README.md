@@ -11,6 +11,8 @@ A browser-based civilization evolution simulator centered on individual human li
 Work in this repository only. Do not reference, depend on, copy from, or browse other GitHub repositories unless the human owner explicitly requests it.
 
 ## Current state
+
+The current branch contains a playable Era 0 vertical slice: two immortal founders, mortal descendants, deterministic time, genealogy, pregnancy/birth, resources, gathering, fire, shelter, survival pressure, chronicle, and simulation controls.
 The repository is at the documentation/bootstrap stage. The next implementation milestone is M0/M1: establish the Vite + React + TypeScript application and a deterministic simulation kernel before expanding the UI.
 
 ## Deployment

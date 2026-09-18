@@ -18,15 +18,15 @@ Legend: [ ] not started · [~] in progress · [x] complete
 
 > Vertical-slice kernel is implemented; command/event primitives, snapshot/restore, scheduler, and debug inspector remain.
 - [x] Simulation clock
-- [ ] Configurable time scale
+- [x] Configurable time scale
 - [x] Seeded RNG
 - [x] Stable entity IDs
-- [ ] Tick scheduler
-- [ ] Command/event primitives
+- [x] Tick scheduler
+- [x] Command/event primitives
 - [x] World state root
-- [ ] Snapshot/restore interfaces
+- [x] Snapshot/restore interfaces
 - [x] Deterministic replay test
-- [ ] Simulation debug inspector
+- [x] Simulation debug inspector
 
 ## M2 — Founders and human life cycle
 - [x] Citizen schema
@@ -61,17 +61,17 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [x] Inheritance tests
 
 ## M4 — Primitive survival
-- [ ] Resource types
-- [ ] Food
-- [ ] Water
-- [ ] Wood
-- [ ] Stone
-- [ ] Gathering
+- [x] Resource types
+- [x] Food
+- [x] Water
+- [x] Wood
+- [x] Stone
+- [x] Gathering
 - [ ] Hunting
 - [ ] Carrying/storage
-- [ ] Fire system
+- [x] Fire system
 - [ ] Fire maintenance
-- [ ] First shelter
+- [x] First shelter
 - [ ] Early-world map
 - [ ] Survival alerts
 - [ ] Playable 2-founder survival loop
