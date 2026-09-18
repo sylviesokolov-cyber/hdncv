@@ -26,6 +26,7 @@ export class Simulation {
       nextCitizenNumber:3,
       citizens:{[king.id]:king,[queen.id]:queen},
       resources:{food:100,water:100,wood:30,stone:20},
+      buildings:[],completedResearch:[],researchProjects:[],
       chronicle:["The Dynasty begins with the immortal King and Queen."]
     };
   }
@@ -59,8 +60,66 @@ export class Simulation {
           }
         }
       }
+      this.resolveAutonomy();
+      this.processConstruction();
+      this.processResearch();
       this.fulfillBasicNeeds();
       this.processPregnancies();
+    }
+  }
+
+  private resolveAutonomy():void {
+    for(const c of this.livingCitizens){
+      if(c.lifeStage==="infant"||c.lifeStage==="child"||c.lifeStage==="elder")continue;
+      if(c.order && c.order.kind!=="idle")continue;
+      c.job="Worker";
+      c.order={kind:"work",label:"Worker",startedTick:this.state.tick};
+    }
+    const workers=this.livingCitizens.filter(c=>c.job==="Worker" && c.order?.kind==="work");
+    const cycle=this.state.tick%4;
+    for(const c of workers){
+      if(c.fatigue>85)continue;
+      if(cycle===0){this.state.resources.food+=2;this.setSilentOrder(c,"gather","Gathering food");}
+      else if(cycle===1){this.state.resources.water+=3;this.setSilentOrder(c,"fetchWater","Fetching water");}
+      else if(cycle===2){this.state.resources.wood+=2;this.setSilentOrder(c,"gather","Gathering wood");}
+      else {this.state.resources.stone+=1;this.setSilentOrder(c,"gather","Gathering stone");}
+    }
+  }
+
+  private setSilentOrder(c:Citizen,kind:OrderKind,label:string):void {
+    c.order={kind,label,startedTick:this.state.tick};
+  }
+
+  private processConstruction():void {
+    for(const project of this.state.buildings){
+      if(project.completedTick!==undefined)continue;
+      project.workerIds=project.workerIds.filter(id=>{
+        const c=this.state.citizens[id]; return Boolean(c&&c.deathTick===undefined&&c.order?.kind==="build");
+      });
+      const workers=project.workerIds.map(id=>this.state.citizens[id]).filter(Boolean);
+      project.workDone=Math.min(project.workRequired,project.workDone+workers.reduce((sum,c)=>sum+Math.max(1,Math.round(c.genome.strength/50)),0));
+      if(project.workDone>=project.workRequired){
+        project.completedTick=this.state.tick;
+        for(const c of workers)c.order={kind:"work",label:"Worker",startedTick:this.state.tick};
+        this.state.chronicle.push(project.name+" was completed in "+(project.completedTick-project.startedTick)+" years.");
+      }
+    }
+  }
+
+  private processResearch():void {
+    for(const project of this.state.researchProjects){
+      if(project.completedTick!==undefined)continue;
+      project.researcherIds=project.researcherIds.filter(id=>{
+        const c=this.state.citizens[id];return Boolean(c&&c.deathTick===undefined&&c.order?.kind==="research");
+      });
+      const researchers=project.researcherIds.map(id=>this.state.citizens[id]).filter(Boolean);
+      project.researchDone=Math.min(project.researchRequired,project.researchDone+researchers.reduce((sum,c)=>sum+Math.max(1,Math.round(c.genome.intelligence*c.genome.learning/2500)),0));
+      if(project.researchDone>=project.researchRequired){
+        project.completedTick=this.state.tick;
+        if(!this.state.completedResearch.includes(project.id))this.state.completedResearch.push(project.id);
+        for(const c of researchers)c.order={kind:"work",label:"Worker",startedTick:this.state.tick};
+        this.state.chronicle.push(project.name+" research was completed.");
+      }
     }
   }
 
@@ -134,6 +193,53 @@ export class Simulation {
     if(!c)throw new Error("Citizen not found.");
     c.needPriority=Math.max(0,Math.min(100,Math.round(priority)));
   }
+
+  private requireAdult(c:Citizen):void {
+    if(c.lifeStage!=="adult"&&c.lifeStage!=="matureAdult")throw new Error("Only adult citizens can be assigned specialist work.");
+  }
+
+  startBuilding(citizen:Citizen,buildingId:string,name:string,description:string,workRequired=20):BuildingProject {
+    this.requireAdult(citizen);
+    const existing=this.state.buildings.find(b=>b.id===buildingId&&b.completedTick===undefined);
+    const project=existing??{id:buildingId,name,description,workRequired,workDone:0,startedTick:this.state.tick,workerIds:[]};
+    if(!existing)this.state.buildings.push(project);
+    if(!project.workerIds.includes(citizen.id))project.workerIds.push(citizen.id);
+    this.setOrder(citizen,"build","Building "+name);
+    return project;
+  }
+
+  addBuilder(citizen:Citizen,buildingId:string):BuildingProject {
+    const project=this.state.buildings.find(b=>b.id===buildingId&&b.completedTick===undefined);
+    if(!project)throw new Error("Building project not found.");
+    this.requireAdult(citizen);
+    if(!project.workerIds.includes(citizen.id))project.workerIds.push(citizen.id);
+    this.setOrder(citizen,"build","Building "+project.name);
+    return project;
+  }
+
+  startResearch(citizen:Citizen,research:ResearchDefinition):ResearchProject {
+    this.requireAdult(citizen);
+    if(research.prerequisites.some(id=>!this.state.completedResearch.includes(id)))throw new Error("Research prerequisites are not complete.");
+    const existing=this.state.researchProjects.find(p=>p.id===research.id&&p.completedTick===undefined);
+    const project=existing??{id:research.id,name:research.name,description:research.description,researchRequired:research.cost,researchDone:0,startedTick:this.state.tick,researcherIds:[],prerequisites:research.prerequisites};
+    if(!existing)this.state.researchProjects.push(project);
+    if(!project.researcherIds.includes(citizen.id))project.researcherIds.push(citizen.id);
+    this.setOrder(citizen,"research","Researching "+research.name);
+    return project;
+  }
+
+  addResearcher(citizen:Citizen,researchId:string):ResearchProject {
+    const project=this.state.researchProjects.find(p=>p.id===researchId&&p.completedTick===undefined);
+    if(!project)throw new Error("Research project not found.");
+    this.requireAdult(citizen);
+    if(!project.researcherIds.includes(citizen.id))project.researcherIds.push(citizen.id);
+    this.setOrder(citizen,"research","Researching "+project.name);
+    return project;
+  }
+
+  getIdleWorkers():Citizen[]{return this.livingCitizens.filter(c=>c.lifeStage==="adult"||c.lifeStage==="matureAdult").filter(c=>!c.order||c.order.kind==="idle");}
+  getActiveBuilders(projectId:string):Citizen[]{const p=this.state.buildings.find(x=>x.id===projectId);return p?p.workerIds.map(id=>this.state.citizens[id]).filter(Boolean):[];}
+  getActiveResearchers(projectId:string):Citizen[]{const p=this.state.researchProjects.find(x=>x.id===projectId);return p?p.researcherIds.map(id=>this.state.citizens[id]).filter(Boolean):[];}
 
   private setOrder(citizen:Citizen,kind:OrderKind,label:string,target?:Citizen):CitizenOrder {
     const c=this.state.citizens[citizen.id];
