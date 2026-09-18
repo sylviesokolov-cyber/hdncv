@@ -49,7 +49,11 @@ export function App(){
  const breedNpc=()=>{const partner=sim.livingCitizens.find(c=>c.id!==selected.id&&c.sex!==selected.sex&&sim.canReproduce(c));if(!partner){setCommandNote("No eligible opposite-sex NPC is available.");return}execute(()=>sim.breedWith(selected,partner))};
 
  const actions:Action[]=[
-  {id:"job",category:"Work",icon:"✦",title:"Assign work",subtitle:"Choose a role for this citizen",run:()=>execute(()=>sim.assignJob(selected,"Gatherer"))},
+  {id:"gatherer",category:"Work",icon:"✦",title:"Gatherer",subtitle:"Produce food from the surrounding land",run:()=>execute(()=>sim.assignJob(selected,"Gatherer"))},
+  {id:"water-carrier",category:"Work",icon:"◉",title:"Water carrier",subtitle:"Keep the settlement supplied with water",run:()=>execute(()=>sim.assignJob(selected,"Water Carrier"))},
+  {id:"lumberjack",category:"Work",icon:"◇",title:"Lumberjack",subtitle:"Gather wood for buildings and fire",run:()=>execute(()=>sim.assignJob(selected,"Lumberjack"))},
+  {id:"quarry-worker",category:"Work",icon:"◆",title:"Quarry worker",subtitle:"Gather stone for construction",run:()=>execute(()=>sim.assignJob(selected,"Quarry Worker"))},
+  {id:"worker",category:"Work",icon:"⚒",title:"General worker",subtitle:"Let the simulation rotate basic gathering",run:()=>execute(()=>sim.assignJob(selected,"Worker"))},
   {id:"task",category:"Work",icon:"☷",title:"Give a task",subtitle:"Issue a specific one-time instruction",run:giveTask},
   {id:"breed-player",category:"Family",icon:"♡",title:"With the ruler",subtitle:selected.sex==="female"?"Conceive with the King":"Father a child with the Queen",disabled:!sim.canReproduce(selected),run:breedPlayer},
   {id:"breed-npc",category:"Family",icon:"∞",title:"With another citizen",subtitle:"Find an eligible opposite-sex partner",disabled:!sim.canReproduce(selected),run:breedNpc},
