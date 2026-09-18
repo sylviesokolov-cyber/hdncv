@@ -1,4 +1,4 @@
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {Simulation} from "../simulation/core/simulation";
 import type {Citizen} from "../simulation/core/types";
 
@@ -21,6 +21,8 @@ export function App(){
  const [detailOpen,setDetailOpen]=useState(false);
  const [commandNote,setCommandNote]=useState<string>();
  const [mainTab,setMainTab]=useState<MainTab>("Camp");
+ const [booting,setBooting]=useState(true);
+ useEffect(()=>{const timer=window.setTimeout(()=>setBooting(false),850);return()=>window.clearTimeout(timer)},[]);
  const researchDef={id:"fire-tools",name:"Fire & Primitive Tools",description:"Controlled fire, stone tools and the first reliable craft techniques.",cost:24,prerequisites:[] as string[]};
  const [,refresh]=useState(0);
  const selected=sim.state.citizens[selectedId]??sim.state.citizens[sim.state.founders.kingId];
@@ -73,11 +75,13 @@ export function App(){
   {mainTab==="Camp"&&<section className="stage">
     <div className="scene">
       <div className="scene-copy">
-        <span className="label">FOUNDERS' CAMP</span>
-        <h1>The dynasty begins.</h1>
-        <p>Two immortal founders. One settlement. Every life matters.</p>
+        <span className="label">FOUNDING CAMP</span>
+        <strong className="scene-location">First settlement</strong>
         <div className="scene-status"><span className="pulse"/>Simulation running <b>Year {sim.state.tick}</b></div>
       </div>
+      <div className="scene-marker scene-marker-water"><span>◉</span> Water</div>
+      <div className="scene-marker scene-marker-camp"><span>✦</span> Camp</div>
+      <div className="scene-marker scene-marker-wood"><span>◇</span> Woodland</div>
       <div className="scene-sun"/>
       <div className="mountain mountain-a"/><div className="mountain mountain-b"/><div className="campfire"/><div className="tent tent-a"/><div className="tent tent-b"/>
     </div>
@@ -119,5 +123,6 @@ export function App(){
   </div>}
 
   <div className="floating-advance"><button onClick={advance}>Advance 1 year <b>→</b></button></div><nav className="mobile-nav">{([["Camp","◫"],["People","♙"],["Resources","◈"],["Research","◇"]] as [MainTab,string][]).map(([tab,icon])=><button className={mainTab===tab?"active":""} key={tab} onClick={()=>{setMainTab(tab);setDetailOpen(false)}}>{icon}<span>{tab}</span></button>)}</nav>
+ {booting&&<div className="boot-screen"><div className="boot-mark">DS</div><span className="label">DYNASTY SIM</span><h1>The First Dynasty</h1><p>Preparing the founding camp…</p><div className="boot-bar"><span/></div></div>}
  </main>;
 }
