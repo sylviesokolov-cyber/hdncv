@@ -1,55 +1,18 @@
 import {describe,expect,it} from "vitest";
 import {Simulation} from "../src/simulation/core/simulation";
+
 describe("simulation kernel",()=>{
  it("starts with exactly two immortal founders",()=>{const s=new Simulation(1);expect(s.livingCitizens).toHaveLength(2);expect(Object.values(s.state.citizens).every(c=>c.founder)).toBe(true);});
  it("is deterministic for the same seed",()=>{const a=new Simulation(42),b=new Simulation(42);a.createChild(a.state.citizens.c_king,a.state.citizens.c_queen);b.createChild(b.state.citizens.c_king,b.state.citizens.c_queen);expect(a.state).toEqual(b.state);});
  it("supports marriage, siblings, ancestors, and descendants",()=>{const s=new Simulation(4);const king=s.state.citizens.c_king,queen=s.state.citizens.c_queen;s.marry(king,queen);const first=s.createChild(king,queen),second=s.createChild(king,queen);expect(king.spouseId).toBe(queen.id);expect(queen.spouseId).toBe(king.id);expect(first.parentIds).toEqual([king.id,queen.id]);expect(king.childIds).toEqual([first.id,second.id]);expect(queen.childIds).toEqual([first.id,second.id]);expect(s.getSiblings(first).map(c=>c.id)).toEqual([second.id]);expect(s.getAncestors(first).map(c=>c.id)).toEqual([king.id,queen.id]);expect(s.getDescendants(king).map(c=>c.id)).toEqual([first.id,second.id]);});
-
  it("rejects invalid marriages",()=>{const s=new Simulation(5);const king=s.state.citizens.c_king,queen=s.state.citizens.c_queen;s.marry(king,queen);expect(()=>s.marry(king,queen)).toThrow();});
-
  it("keeps founders immortal while descendants age and can die",()=>{const s=new Simulation(2);const c=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);c.genome.longevity=1;s.advance(2);expect(s.state.citizens.c_king.deathTick).toBeUndefined();expect(s.state.citizens.c_queen.deathTick).toBeUndefined();expect(c.deathTick).toBeDefined();});
  it("allows genetic technology only on founders and propagates its provenance",()=>{const s=new Simulation(3);const tech={id:"longevity-1",name:"Enhanced Longevity",description:"",cost:10,mode:"activeFounder" as const,prerequisiteIds:[]};s.applyFounderGeneticTech(s.state.citizens.c_king.id,tech);const c=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);expect(()=>s.applyFounderGeneticTech(c.id,tech)).toThrow();expect(c.genome.geneticTechIds).toContain("longevity-1");expect(c.royalGeneticHeritage).toBe(true);});
- it("supports deterministic pregnancy and birth",()=>{
-   const s=new Simulation(6);
-   const mother=s.state.citizens.c_queen;
-   const father=s.state.citizens.c_king;
-   const pregnancy=s.conceive(mother,father);
-   expect(pregnancy.conceptionTick).toBe(0);
-   expect(pregnancy.dueTick).toBe(1);
-   expect(mother.pregnancy).toEqual(pregnancy);
-   expect(s.livingCitizens).toHaveLength(2);
-   s.advance(1);
-   const children=s.getDescendants(mother.id);
-   expect(children).toHaveLength(1);
-   expect(children[0].birthTick).toBe(1);
-   expect(children[0].ageYears).toBe(0);
-   expect(children[0].founder).toBe(false);
-   expect(children[0].parentIds).toEqual([mother.id,father.id]);
-   expect(mother.pregnancy).toBeUndefined();
-   expect(s.state.chronicle.some(entry=>entry.includes("was born"))).toBe(true);
- });
-
- it("rejects invalid pregnancy attempts",()=>{
-   const s=new Simulation(7);
-   const mother=s.state.citizens.c_queen;
-   const father=s.state.citizens.c_king;
-   mother.ageYears=10;
-   mother.lifeStage="child";
-   expect(()=>s.conceive(mother,father)).toThrow();
-   mother.ageYears=25;
-   mother.lifeStage="adult";
-   s.conceive(mother,father);
-   expect(()=>s.conceive(mother,father)).toThrow();
- });
-
- it("keeps ordinary descendants mortal through pregnancy birth",()=>{
-   const s=new Simulation(8);
-   const child=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);
-   child.ageYears=0;
-   child.lifeStage="infant";
-   expect(child.founder).toBe(false);
-   expect(s.state.citizens.c_king.founder).toBe(true);
-   expect(s.state.citizens.c_queen.founder).toBe(true);
- });
-
+ it("supports deterministic pregnancy and birth",()=>{const s=new Simulation(6);const mother=s.state.citizens.c_queen,father=s.state.citizens.c_king;const pregnancy=s.conceive(mother,father);expect(pregnancy.conceptionTick).toBe(0);expect(pregnancy.dueTick).toBe(1);expect(mother.pregnancy).toEqual(pregnancy);expect(s.livingCitizens).toHaveLength(2);s.advance(1);const children=s.getDescendants(mother.id);expect(children).toHaveLength(1);expect(children[0].birthTick).toBe(1);expect(children[0].ageYears).toBe(0);expect(children[0].founder).toBe(false);expect(children[0].parentIds).toEqual([mother.id,father.id]);expect(mother.pregnancy).toBeUndefined();expect(s.state.chronicle.some(entry=>entry.includes("was born"))).toBe(true);});
+ it("rejects invalid pregnancy attempts",()=>{const s=new Simulation(7);const mother=s.state.citizens.c_queen,father=s.state.citizens.c_king;mother.ageYears=10;mother.lifeStage="child";expect(()=>s.conceive(mother,father)).toThrow();mother.ageYears=25;mother.lifeStage="adult";s.conceive(mother,father);expect(()=>s.conceive(mother,father)).toThrow();});
+ it("keeps ordinary descendants mortal through pregnancy birth",()=>{const s=new Simulation(8);const child=s.createChild(s.state.citizens.c_king,s.state.citizens.c_queen);expect(child.founder).toBe(false);expect(s.state.citizens.c_king.founder).toBe(true);expect(s.state.citizens.c_queen.founder).toBe(true);});
+ it("supports character orders and gender-aware breeding",()=>{const s=new Simulation(9);const king=s.state.citizens.c_king,queen=s.state.citizens.c_queen;expect(simOrder(s.assignJob(king,"Gatherer"),"work","Gatherer"));expect(simOrder(s.orderResearch(queen,"Fire"),"research","research Fire"));const pregnancy=s.breedWith(queen,king);expect(pregnancy.motherId).toBe(queen.id);expect(queen.order?.kind).toBe("breed");});
+ it("fulfills basic needs automatically by priority when supplies exist",()=>{const s=new Simulation(10);const king=s.state.citizens.c_king,queen=s.state.citizens.c_queen;king.hunger=80;queen.hunger=80;king.thirst=80;queen.thirst=80;king.needPriority=100;queen.needPriority=50;const foodBefore=s.state.resources.food,waterBefore=s.state.resources.water;s.advance(1);expect(king.hunger).toBeLessThan(queen.hunger);expect(king.thirst).toBeLessThan(queen.thirst);expect(s.state.resources.food).toBe(foodBefore-2);expect(s.state.resources.water).toBe(waterBefore-2);});
 });
+
+function simOrder(order:{kind:string;label:string},kind:string,label:string){expect(order.kind).toBe(kind);expect(order.label).toBe(label);return true;}
