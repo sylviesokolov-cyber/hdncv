@@ -208,3 +208,20 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Visual/runtime checks pass for UI work
 - [ ] Documentation updated where needed
 - [ ] TODO status updated
+## Genetics-specific acceptance checklist
+- [ ] Create separate Genetic Technology Tree data model
+- [ ] Distinguish genetic technology unlock from genetic trait inheritance
+- [ ] Add founder-only genetic modification state
+- [ ] Support active founder genetic upgrades
+- [ ] Support passive founder genetic upgrades
+- [ ] Track genetic technology provenance on founder traits
+- [ ] Implement founder × founder inheritance
+- [ ] Implement founder × NPC royal offspring inheritance
+- [ ] Implement royal descendant × NPC inheritance
+- [ ] Implement NPC × NPC ordinary inheritance with no genetic-tech advancement
+- [ ] Prevent NPC breeding from unlocking genetic technologies
+- [ ] Add Royal/Founder genetic heritage classification
+- [ ] Expose trait provenance in citizen genetics UI
+- [ ] Add automated tests proving NPCs cannot create genetic improvements
+- [ ] Add automated tests proving founder upgrades can propagate through descendants
+- [ ] Add automated tests proving founders remain immortal
