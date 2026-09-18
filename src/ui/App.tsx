@@ -61,7 +61,7 @@ export function App(){
  return <main className="app-shell">
   <header className="topbar">
     <div className="brand"><div className="brand-mark">DS</div><div><span>DYNASTY SIM</span><strong>The First Dynasty</strong></div></div>
-    <div className="era-chip"><span>ERA 0</span><b>Founding Age</b></div>
+    <div className="era-chip"><span>ERA 0 · FOUNDING AGE</span><b>Year {sim.state.tick} · {sim.livingCitizens.length} people</b></div>
     <div className="top-actions"><div className="resource-chip"><span>◈</span><b>{sim.state.resources.food}</b><em>Food</em></div><div className="resource-chip"><span>◉</span><b>{sim.state.resources.water}</b><em>Water</em></div><button className="advance-btn" onClick={advance}>Advance year <span>→</span></button></div>
   </header>
 
@@ -77,16 +77,18 @@ export function App(){
       <div className="scene-copy">
         <span className="label">FOUNDING CAMP</span>
         <strong className="scene-location">First settlement</strong>
-        <div className="scene-status"><span className="pulse"/>Simulation running <b>Year {sim.state.tick}</b></div>
+        <div className="scene-status"><span className="pulse"/>Live <b>Year {sim.state.tick} · Gen {maxGen}</b></div>
       </div>
       <div className="scene-marker scene-marker-water"><span>◉</span> Water</div>
       <div className="scene-marker scene-marker-camp"><span>✦</span> Camp</div>
       <div className="scene-marker scene-marker-wood"><span>◇</span> Woodland</div>
+      <div className="scene-hint"><span className="label">COMMAND CENTER</span><strong>Tap a person to issue an order</strong></div>
       <div className="scene-sun"/>
       <div className="mountain mountain-a"/><div className="mountain mountain-b"/><div className="campfire"/><div className="tent tent-a"/><div className="tent tent-b"/>
     </div>
 
     <aside className="roster panel">
+      <div className="roster-mobile-label"><span className="label">PEOPLE</span><strong>Select a citizen</strong></div>
       <div className="panel-head"><div><span className="label">PEOPLE</span><h2>Your people</h2></div><b>{sim.livingCitizens.length}</b></div>
       <div className="roster-list">{sim.livingCitizens.map(c=><button className={"roster-item "+(selected.id===c.id?"selected":"")} key={c.id} onClick={()=>select(c.id)}><img src={portraitFor(c)}/><span><b>{c.name}</b><small>{roleFor(c)} · {c.ageYears} years</small><em>{formatCommand(c)}</em></span><i>›</i></button>)}</div>
       <div className="auto-box"><span className="auto-icon">✧</span><div><b>Needs are autonomous</b><small>Food, water and basic necessities are handled automatically when supplies exist.</small></div></div>
