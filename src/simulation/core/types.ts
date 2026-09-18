@@ -1,0 +1,31 @@
+export type Sex = "male" | "female";
+export type LifeStage = "infant"|"child"|"adolescent"|"adult"|"matureAdult"|"elder";
+export type CitizenId = string;
+
+export interface Genome {
+  longevity:number; diseaseResistance:number; strength:number; endurance:number;
+  intelligence:number; fertility:number; learning:number;
+  founderOrigin?: "king"|"queen";
+  geneticTechIds:string[];
+}
+
+export interface Citizen {
+  id:CitizenId; name:string; sex:Sex; generation:number;
+  birthTick:number; deathTick?:number; founder:boolean;
+  genome:Genome; lifeStage:LifeStage; ageYears:number;
+  health:number; hunger:number; thirst:number; fatigue:number;
+  parentIds:CitizenId[]; childIds:CitizenId[]; spouseId?:CitizenId;
+  royalGeneticHeritage:boolean;
+}
+
+export interface SimulationState {
+  version:1; seed:number; tick:number; founders:{kingId:CitizenId; queenId:CitizenId};
+  nextCitizenNumber:number; citizens:Record<CitizenId,Citizen>;
+  chronicle:string[];
+}
+
+export interface GeneticTechnology {
+  id:string; name:string; description:string; cost:number;
+  mode:"activeFounder"|"passiveFounder"|"breeding";
+  prerequisiteIds:string[];
+}
