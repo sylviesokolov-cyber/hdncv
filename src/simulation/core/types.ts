@@ -2,6 +2,13 @@ export type Sex = "male" | "female";
 export type LifeStage = "infant"|"child"|"adolescent"|"adult"|"matureAdult"|"elder";
 export type CitizenId = string;
 
+export interface Pregnancy {
+  motherId:CitizenId;
+  fatherId:CitizenId;
+  conceptionTick:number;
+  dueTick:number;
+}
+
 export interface Genome {
   longevity:number; diseaseResistance:number; strength:number; endurance:number;
   intelligence:number; fertility:number; learning:number;
@@ -15,6 +22,7 @@ export interface Citizen {
   genome:Genome; lifeStage:LifeStage; ageYears:number;
   health:number; hunger:number; thirst:number; fatigue:number;
   parentIds:CitizenId[]; childIds:CitizenId[]; spouseId?:CitizenId;
+  pregnancy?:Pregnancy;
   royalGeneticHeritage:boolean;
 }
 
