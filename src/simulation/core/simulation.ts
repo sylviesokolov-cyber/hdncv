@@ -93,7 +93,7 @@ export class Simulation {
   private processConstruction():void {
     for(const project of this.state.buildings){
       if(project.completedTick!==undefined)continue;
-      project.workerIds=project.workerIds.filter(id=>{
+      project.workerIds=project.workerIds.filter((id:CitizenId)=>{
         const c=this.state.citizens[id]; return Boolean(c&&c.deathTick===undefined&&c.order?.kind==="build");
       });
       const workers=project.workerIds.map(id=>this.state.citizens[id]).filter(Boolean);
@@ -109,7 +109,7 @@ export class Simulation {
   private processResearch():void {
     for(const project of this.state.researchProjects){
       if(project.completedTick!==undefined)continue;
-      project.researcherIds=project.researcherIds.filter(id=>{
+      project.researcherIds=project.researcherIds.filter((id:CitizenId)=>{
         const c=this.state.citizens[id];return Boolean(c&&c.deathTick===undefined&&c.order?.kind==="research");
       });
       const researchers=project.researcherIds.map(id=>this.state.citizens[id]).filter(Boolean);
