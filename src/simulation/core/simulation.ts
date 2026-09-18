@@ -37,13 +37,10 @@ export class Simulation {
   getSiblings(citizenId:CitizenId):Citizen[] {
     const citizen=this.state.citizens[citizenId];
     if(!citizen)return [];
-    const siblingIds=new Set<CitizenId>();
-    for(const parentId of citizen.parentIds){
-      for(const childId of this.state.citizens[parentId]?.childIds??[]){
-        if(childId!==citizenId)siblingIds.add(childId);
-      }
-    }
-    return [...siblingIds].map(id=>this.state.citizens[id]).filter((c):c is Citizen=>Boolean(c));
+    const parentIds=new Set(citizen.parentIds);
+    return Object.values(this.state.citizens).filter(other =>
+      other.id!==citizenId && other.parentIds.some(parentId=>parentIds.has(parentId))
+    );
   }
 
   getAncestors(citizenId:CitizenId):Citizen[] {
