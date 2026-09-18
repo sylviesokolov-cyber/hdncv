@@ -53,8 +53,8 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [x] Compact genome
 - [x] Trait inheritance
 - [x] Trait variation
-- [ ] Fertility
-- [ ] Pregnancy/birth flow
+- [x] Fertility
+- [x] Pregnancy/birth flow
 - [x] Genealogy queries
 - [ ] Family-tree UI
 - [x] Genetics UI
