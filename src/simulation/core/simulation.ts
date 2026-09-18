@@ -34,17 +34,17 @@ export class Simulation {
     this.state.chronicle.push(partnerA.name+" and "+partnerB.name+" married.");
   }
 
-  getSiblings(citizenId:CitizenId):Citizen[] {
-    const citizen=this.state.citizens[citizenId];
-    if(!citizen)return [];
+  getSiblings(citizen:Citizen):Citizen[] {
+    const state=this.state.citizens[citizen.id];
+    if(!state)return [];
 
-    const parentIds=new Set(citizen.parentIds);
+    const parentIds=new Set(state.parentIds);
     return Object.values(this.state.citizens).filter(other =>
-      other.id!==citizenId && other.parentIds.some(parentId=>parentIds.has(parentId))
+      other.id!==state.id && other.parentIds.some(parentId=>parentIds.has(parentId))
     );
   }
 
-  getAncestors(citizenId:CitizenId):Citizen[] {
+  getAncestors(citizen:Citizen):Citizen[] {
     const result:Citizen[]=[];
     const seen=new Set<CitizenId>();
     const visit=(id:CitizenId)=>{
@@ -58,11 +58,11 @@ export class Simulation {
         visit(parentId);
       }
     };
-    visit(citizenId);
+    visit(citizen.id);
     return result;
   }
 
-  getDescendants(citizenId:CitizenId):Citizen[] {
+  getDescendants(citizen:Citizen):Citizen[] {
     const result:Citizen[]=[];
     const seen=new Set<CitizenId>();
     const visit=(id:CitizenId)=>{
@@ -76,7 +76,7 @@ export class Simulation {
         visit(childId);
       }
     };
-    visit(citizenId);
+    visit(citizen.id);
     return result;
   }
   createChild(parentA:Citizen,parentB:Citizen):Citizen {
