@@ -60,10 +60,10 @@ export class Simulation {
           }
         }
       }
+      this.fulfillBasicNeeds();
       this.resolveAutonomy();
       this.processConstruction();
       this.processResearch();
-      this.fulfillBasicNeeds();
       this.processPregnancies();
     }
   }
