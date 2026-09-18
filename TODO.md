@@ -41,7 +41,7 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Injury state
 - [x] Descendant death
 - [ ] Death causes
-- [ ] Selected-citizen UI
+- [x] Selected-citizen UI
 - [x] Birth/death tests
 
 ## M3 — Families and genetics
@@ -61,9 +61,11 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [x] Inheritance tests
 
 ## M4 — Primitive survival
+
+> Initial resource pools and automatic basic-need fulfillment are now wired into the simulation; gathering/production still remain.
 - [ ] Resource types
-- [ ] Food
-- [ ] Water
+- [x] Food
+- [x] Water
 - [ ] Wood
 - [ ] Stone
 - [ ] Gathering
@@ -87,7 +89,7 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Work productivity
 - [ ] Inventory/storage
 - [ ] Household consumption
-- [ ] Work-assignment commands
+- [x] Work-assignment commands
 - [ ] Job UI
 - [ ] Production diagnostics
 
@@ -191,6 +193,14 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Long-session soak tests
 - [ ] Crash/error recovery
 - [ ] Final deployment workflow
+
+## Character interaction slice
+- [x] Four anime-inspired character portraits: King, Queen, NPC male, NPC female
+- [x] Selectable character command center
+- [x] Categorized work/family/development/exploration/command actions
+- [x] Gender-aware player/NPC breeding actions
+- [x] Automatic food/water fulfillment with deterministic priority ordering
+- [x] Character order state recorded in simulation chronicle
 
 ## Always-on quality
 - [ ] No game rule only exists inside UI components
