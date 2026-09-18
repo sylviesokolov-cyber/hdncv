@@ -67,23 +67,32 @@ export class Simulation {
       this.processConstruction();
       this.processResearch();
       this.processPregnancies();
+      if (!this.state.activeEvent) {
+        const event = eventForYear(this.state.tick);
+        if (event) this.state.activeEvent = structuredClone(event);
+      }
     }
   }
 
   private resolveAutonomy():void {
     for(const c of this.livingCitizens){
       if(c.lifeStage==="infant"||c.lifeStage==="child"||c.lifeStage==="elder")continue;
-      if(c.order && !["idle","work","gather","hunt","fetchWater"].includes(c.order.kind))continue;
+      if(c.order && !["idle","work"].includes(c.order.kind))continue;
+      if(c.job && c.job!=="Worker")continue;
       c.job="Worker";
       c.order={kind:"work",label:"Worker",startedTick:this.state.tick};
     }
   }
 
   private processWorkerProduction():void {
-    const workers=this.livingCitizens.filter(c=>c.job==="Worker" && c.order?.kind==="work");
+    const workers=this.livingCitizens.filter(c=>c.lifeStage==="adult"||c.lifeStage==="matureAdult").filter(c=>c.fatigue<=85);
     const cycle=this.state.tick%4;
     for(const c of workers){
-      if(c.fatigue>85)continue;
+      if(c.job==="Gatherer"){this.state.resources.food+=2;this.setSilentOrder(c,"gather","Gathering food");continue;}
+      if(c.job==="Water Carrier"){this.state.resources.water+=3;this.setSilentOrder(c,"fetchWater","Fetching water");continue;}
+      if(c.job==="Lumberjack"){this.state.resources.wood+=2;this.setSilentOrder(c,"gather","Gathering wood");continue;}
+      if(c.job==="Quarry Worker"){this.state.resources.stone+=1;this.setSilentOrder(c,"gather","Gathering stone");continue;}
+      if(c.job!=="Worker" || c.order?.kind!=="work")continue;
       if(cycle===0){this.state.resources.food+=2;this.setSilentOrder(c,"gather","Gathering food");}
       else if(cycle===1){this.state.resources.water+=3;this.setSilentOrder(c,"fetchWater","Fetching water");}
       else if(cycle===2){this.state.resources.wood+=2;this.setSilentOrder(c,"gather","Gathering wood");}
@@ -271,7 +280,7 @@ export class Simulation {
 
   getAvailableWorkers():Citizen[]{
     return this.livingCitizens
-      .filter(c=>(c.lifeStage==="adult"||c.lifeStage==="matureAdult") && (!c.order || c.order.kind==="idle" || c.order.kind==="work"))
+      .filter(c=>(c.lifeStage==="adult"||c.lifeStage==="matureAdult") && (c.job==="Worker" || !c.job) && (!c.order || c.order.kind==="idle" || c.order.kind==="work"))
       .sort((a,b)=>a.id.localeCompare(b.id));
   }
 
@@ -292,7 +301,13 @@ export class Simulation {
     return order;
   }
 
-  assignJob(citizen:Citizen,job:string):CitizenOrder { return this.setOrder(citizen,"work",job); }
+  assignJob(citizen:Citizen,job:string):CitizenOrder {
+    this.requireAdult(citizen);
+    const allowed=["Worker","Gatherer","Water Carrier","Lumberjack","Quarry Worker"];
+    if(!allowed.includes(job))throw new Error("Unknown job.");
+    citizen.job=job;
+    return this.setOrder(citizen,"work",job);
+  }
   orderTask(citizen:Citizen,task:string):CitizenOrder { return this.setOrder(citizen,"task",task); }
   orderResearch(citizen:Citizen,subject:string):CitizenOrder { return this.setOrder(citizen,"research","research "+subject); }
   orderBuild(citizen:Citizen,structure:string):CitizenOrder { return this.setOrder(citizen,"build","build "+structure); }
@@ -373,6 +388,29 @@ export class Simulation {
     if(a.sex==="female"&&p.sex==="male")return this.conceive(a,p);
     if(a.sex==="male"&&p.sex==="female")return this.conceive(p,a);
     throw new Error("Breeding requires opposite-sex partners in this MVP.");
+  }
+
+  resolveEvent(choiceId:string):void {
+    const event=this.state.activeEvent;
+    if(!event)throw new Error("There is no active event.");
+    const choice=event.choices.find(c=>c.id===choiceId);
+    if(!choice)throw new Error("Event choice not found.");
+    const effect=choice.effect;
+    for(const [key,value] of Object.entries(effect.resources??{})){
+      const resource=key as keyof typeof this.state.resources;
+      this.state.resources[resource]=Math.max(0,this.state.resources[resource]+(value??0));
+    }
+    const target=this.livingCitizens
+      .filter(c=>c.lifeStage!=="infant")
+      .sort((a,b)=>a.needPriority-b.needPriority||a.ageYears-b.ageYears||a.id.localeCompare(b.id))[0];
+    if(target){
+      if(effect.health!==undefined)target.health=Math.max(0,Math.min(100,target.health+effect.health));
+      if(effect.hunger!==undefined)target.hunger=Math.max(0,Math.min(100,target.hunger+effect.hunger));
+      if(effect.thirst!==undefined)target.thirst=Math.max(0,Math.min(100,target.thirst+effect.thirst));
+      if(effect.fatigue!==undefined)target.fatigue=Math.max(0,Math.min(100,target.fatigue+effect.fatigue));
+    }
+    this.state.chronicle.push(effect.chronicle);
+    delete this.state.activeEvent;
   }
 
   applyFounderGeneticTech(founderId:CitizenId,tech:GeneticTechnology){
