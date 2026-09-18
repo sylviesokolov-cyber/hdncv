@@ -34,7 +34,7 @@ export function App(){
  const selected=sim.state.citizens[selectedId]??sim.state.citizens[sim.state.founders.kingId];
 
  const rerender=()=>refresh(v=>v+1);
- const advance=()=>{sim.advance(1);rerender()};
+ const advance=()=>{if(sim.state.activeEvent)return;sim.advance(1);rerender()};
  const execute=(fn:()=>void)=>{
    try{fn();setCommandNote("Order issued successfully.");rerender()}
    catch(e){setCommandNote(e instanceof Error?e.message:"Command failed")}
@@ -69,7 +69,7 @@ export function App(){
   <header className="topbar">
     <div className="brand"><div className="brand-mark">DS</div><div><span>DYNASTY SIM</span><strong>The First Dynasty</strong></div></div>
     <div className="era-chip"><span>ERA 0 · FOUNDING AGE</span><b>Year {sim.state.tick} · {sim.livingCitizens.length} people</b></div>
-    <div className="top-actions"><div className="resource-chip"><span>◈</span><b>{sim.state.resources.food}</b><em>Food</em></div><div className="resource-chip"><span>◉</span><b>{sim.state.resources.water}</b><em>Water</em></div><button className="advance-btn" onClick={advance}>Advance year <span>→</span></button></div>
+    <div className="top-actions"><div className="resource-chip"><span>◈</span><b>{sim.state.resources.food}</b><em>Food</em></div><div className="resource-chip"><span>◉</span><b>{sim.state.resources.water}</b><em>Water</em></div><button className="advance-btn" onClick={advance} disabled={Boolean(activeEvent)}>Advance year <span>→</span></button></div>
   </header>
 
   <section className="command-strip">
@@ -135,7 +135,7 @@ export function App(){
     </section>
   </div>}
 
-  <div className="floating-advance"><button onClick={advance}>Advance 1 year <b>→</b></button></div><nav className="mobile-nav">{([["Camp","◫"],["People","♙"],["Resources","◈"],["Building","⌂"],["Research","◇"]] as [MainTab,string][]).map(([tab,icon])=><button className={mainTab===tab?"active":""} key={tab} onClick={()=>{setMainTab(tab);setDetailOpen(false)}}>{icon}<span>{tab}</span></button>)}</nav>
+  <div className="floating-advance"><button onClick={advance} disabled={Boolean(activeEvent)}>Advance 1 year <b>→</b></button></div><nav className="mobile-nav">{([["Camp","◫"],["People","♙"],["Resources","◈"],["Building","⌂"],["Research","◇"]] as [MainTab,string][]).map(([tab,icon])=><button className={mainTab===tab?"active":""} key={tab} onClick={()=>{setMainTab(tab);setDetailOpen(false)}}>{icon}<span>{tab}</span></button>)}</nav>
  {booting&&<div className="boot-screen"><div className="boot-mark">DS</div><span className="label">DYNASTY SIM</span><h1>The First Dynasty</h1><p>Preparing the founding camp…</p><div className="boot-bar"><span/></div></div>}
  </main>;
 }
