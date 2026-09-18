@@ -60,7 +60,7 @@ export function App(){
  ];
  const visibleActions=category==="Overview"?actions:actions.filter(a=>a.category===category);
  const select=(id:string)=>{setSelectedId(id);setCommandNote(undefined);setDetailOpen(true)};
- const maxGen=Math.max(...sim.livingCitizens.map(c=>c.generation));
+ const maxGen=Math.max(...sim.livingCitizens.map(c=>c.generation));\n const activeEvent=sim.state.activeEvent;
  return <main className="app-shell">
   <header className="topbar">
     <div className="brand"><div className="brand-mark">DS</div><div><span>DYNASTY SIM</span><strong>The First Dynasty</strong></div></div>
@@ -74,6 +74,8 @@ export function App(){
     <div><span className="label">GENERATION</span><strong>{maxGen}</strong></div>
     <div className="needs-legend"><span className="dot good"/><span>Supplies automatic</span><span className="dot gold"/><span>Priority {selected.needPriority}</span></div>
   </section>
+
+  {activeEvent&&<div className="event-backdrop"><section className="event-card"><div className="event-kicker">A YEAR IN THE DYNASTY · YEAR {sim.state.tick}</div><h2>{activeEvent.title}</h2><p>{activeEvent.text}</p><div className="event-choices">{activeEvent.choices.map(choice=><button key={choice.id} onClick={()=>execute(()=>sim.resolveEvent(choice.id))}><b>{choice.label}</b><small>{choice.description}</small></button>)}</div></section></div>}
 
   {mainTab==="Camp"&&<section className="stage">
     <div className="scene">
