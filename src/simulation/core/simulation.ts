@@ -38,18 +38,10 @@ export class Simulation {
     const citizen=this.state.citizens[citizenId];
     if(!citizen)return [];
 
-    const siblingIds=new Set<CitizenId>();
-    for(const parentId of citizen.parentIds){
-      const parent=this.state.citizens[parentId];
-      if(!parent)continue;
-      for(const childId of parent.childIds){
-        if(childId!==citizenId)siblingIds.add(childId);
-      }
-    }
-
-    return [...siblingIds]
-      .map(id=>this.state.citizens[id])
-      .filter((sibling): sibling is Citizen => sibling!==undefined);
+    const parentIds=new Set(citizen.parentIds);
+    return Object.values(this.state.citizens).filter(other =>
+      other.id!==citizenId && other.parentIds.some(parentId=>parentIds.has(parentId))
+    );
   }
 
   getAncestors(citizenId:CitizenId):Citizen[] {
@@ -88,6 +80,11 @@ export class Simulation {
     return result;
   }
   createChild(parentA:Citizen,parentB:Citizen):Citizen {
+    const parentAState=this.state.citizens[parentA.id];
+    const parentBState=this.state.citizens[parentB.id];
+    if(!parentAState||!parentBState)throw new Error("Both parents must belong to this simulation.");
+    parentA=parentAState;
+    parentB=parentBState;
     if(parentA.sex===parentB.sex)throw new Error("Founders need opposite-sex breeding for this MVP.");
     if(parentA.deathTick!==undefined||parentB.deathTick!==undefined)throw new Error("A deceased citizen cannot reproduce.");
     const childSex:Sex=this.rng.next()<0.5?"male":"female";
