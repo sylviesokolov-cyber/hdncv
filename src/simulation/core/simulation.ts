@@ -1,0 +1,45 @@
+import type {Citizen, Genome, LifeStage, SimulationState, Sex} from "./types";
+import {SeededRng} from "./rng";
+
+const stage=(age:number):LifeStage=>age<2?"infant":age<8?"child":age<15?"adolescent":age<40?"adult":age<65?"matureAdult":"elder";
+const genome=(rng:SeededRng, founderOrigin?: "king"|"queen"):Genome=>({
+  longevity:rng.int(40,80), diseaseResistance:rng.int(35,75), strength:rng.int(35,75),
+  endurance:rng.int(35,75), intelligence:rng.int(35,75), fertility:rng.int(35,75),
+  learning:rng.int(35,75), founderOrigin, geneticTechIds:[]
+});
+
+export class Simulation {
+  readonly rng:SeededRng;
+  state:SimulationState;
+  constructor(seed=12345){
+    this.rng=new SeededRng(seed);
+    const king=this.makeFounder("male","King");
+    const queen=this.makeFounder("female","Queen");
+    this.state={version:1,seed,tick:0,founders:{kingId:king.id,queenId:queen.id},nextCitizenNumber:3,citizens:{[king.id]:king,[queen.id]:queen},chronicle:["The Dynasty begins with the immortal King and Queen."]};
+  }
+  private makeFounder(sex:Sex,name:string):Citizen {
+    const id=sex==="male"?"c_king":"c_queen";
+    return {id,name,sex,generation:0,birthTick:0,founder:true,genome:genome(this.rng,sex==="male"?"king":"queen"),lifeStage:"adult",ageYears:25,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[],childIds:[],royalGeneticHeritage:true};
+  }
+  advance(years=1){for(let y=0;y<years;y++){this.state.tick++; for(const c of Object.values(this.state.citizens)){if(c.deathTick!==undefined)continue;if(c.founder)continue;c.ageYears++;c.lifeStage=stage(c.ageYears);c.hunger=Math.min(100,c.hunger+4);c.thirst=Math.min(100,c.thirst+5);c.fatigue=Math.min(100,c.fatigue+3);if(c.ageYears>c.genome.longevity){c.deathTick=this.state.tick;c.health=0;this.state.chronicle.push(c.name+" died at age "+c.ageYears+".");}}}}
+  get livingCitizens(){return Object.values(this.state.citizens).filter(c=>c.deathTick===undefined);}
+  createChild(parentA:Citizen,parentB:Citizen):Citizen {
+    if(parentA.sex===parentB.sex)throw new Error("Founders need opposite-sex breeding for this MVP.");
+    if(parentA.deathTick!==undefined||parentB.deathTick!==undefined)throw new Error("A deceased citizen cannot reproduce.");
+    const childSex=this.rng.next()<0.5?"male":"female" as Sex;
+    const choose=(a:number,b:number)=>Math.round((a+b)/2)+this.rng.int(-3,3);
+    const founderOrigin=parentA.founder?(parentA.genome.founderOrigin):parentB.founder?(parentB.genome.founderOrigin):undefined;
+    const ids=parentA.founder||parentB.founder?parentA.founder?parentA.genome.geneticTechIds:parentB.genome.geneticTechIds:[];
+    const child:Citizen={id:"c_"+this.state.nextCitizenNumber++,name:childSex==="male"?"Son":"Daughter",sex:childSex,generation:Math.max(parentA.generation,parentB.generation)+1,birthTick:this.state.tick,founder:false,genome:{longevity:choose(parentA.genome.longevity,parentB.genome.longevity),diseaseResistance:choose(parentA.genome.diseaseResistance,parentB.genome.diseaseResistance),strength:choose(parentA.genome.strength,parentB.genome.strength),endurance:choose(parentA.genome.endurance,parentB.genome.endurance),intelligence:choose(parentA.genome.intelligence,parentB.genome.intelligence),fertility:choose(parentA.genome.fertility,parentB.genome.fertility),learning:choose(parentA.genome.learning,parentB.genome.learning),founderOrigin,geneticTechIds:[...ids]},lifeStage:"infant",ageYears:0,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[parentA.id,parentB.id],childIds:[],royalGeneticHeritage:Boolean(parentA.founder||parentB.founder||parentA.royalGeneticHeritage||parentB.royalGeneticHeritage)};
+    this.state.citizens[child.id]=child; parentA.childIds.push(child.id); parentB.childIds.push(child.id);
+    this.state.chronicle.push(child.name+" was born to "+parentA.name+" and "+parentB.name+".");
+    return child;
+  }
+  applyFounderGeneticTech(founderId:CitizenId,tech:GeneticTechnology){
+    const f=this.state.citizens[founderId];
+    if(!f?.founder)throw new Error("Genetic technology can only be applied to a founder.");
+    if(!f.genome.geneticTechIds.includes(tech.id))f.genome.geneticTechIds.push(tech.id);
+    if(tech.mode==="activeFounder")f.genome.longevity+=10;
+    this.state.chronicle.push(tech.name+" was applied to "+f.name+".");
+  }
+}
