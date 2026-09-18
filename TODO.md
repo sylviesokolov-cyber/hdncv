@@ -54,7 +54,7 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [x] Trait inheritance
 - [x] Trait variation
 - [ ] Fertility
-- [x] Pregnancy/birth flow
+- [ ] Pregnancy/birth flow
 - [ ] Genealogy queries
 - [ ] Family-tree UI
 - [x] Genetics UI
@@ -218,12 +218,12 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Support passive founder genetic upgrades
 - [x] Track genetic technology provenance on founder traits
 - [x] Implement founder × founder inheritance
-- [x] Implement founder × NPC royal offspring inheritance
+- [ ] Implement founder × NPC royal offspring inheritance
 - [ ] Implement royal descendant × NPC inheritance
 - [ ] Implement NPC × NPC ordinary inheritance with no genetic-tech advancement
 - [ ] Prevent NPC breeding from unlocking genetic technologies
 - [x] Add Royal/Founder genetic heritage classification
 - [ ] Expose trait provenance in citizen genetics UI
-- [x] Add automated tests proving NPCs cannot create genetic improvements
+- [ ] Add automated tests proving NPCs cannot create genetic improvements
 - [x] Add automated tests proving founder upgrades can propagate through descendants
 - [x] Add automated tests proving founders remain immortal
