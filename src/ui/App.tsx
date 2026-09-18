@@ -2,59 +2,113 @@ import {useMemo,useState} from "react";
 import {Simulation} from "../simulation/core/simulation";
 import type {Citizen} from "../simulation/core/types";
 
-type Category="All"|"Work"|"Family"|"Development"|"Explore"|"Command";
-const categories:Category[]=["All","Work","Family","Development","Explore","Command"];
+type Category="Overview"|"Work"|"Family"|"Develop"|"Explore"|"Command";
+type Action={id:string;category:Exclude<Category,"Overview">;icon:string;title:string;subtitle:string;disabled?:boolean;run:()=>void};
 
+const base=import.meta.env.BASE_URL;
 const portraitFor=(c:Citizen)=>{
-  if(c.founder)return c.sex==="male"?"/portraits/king.svg":"/portraits/queen.svg";
-  return c.sex==="male"?"/portraits/npc-male.svg":"/portraits/npc-female.svg";
+  if(c.founder)return `${base}portraits/${c.sex==="male"?"king":"queen"}.svg`;
+  return `${base}portraits/${c.sex==="male"?"npc-male":"npc-female"}.svg`;
 };
 const roleFor=(c:Citizen)=>c.founder?(c.sex==="male"?"King":"Queen"):(c.royalGeneticHeritage?"Royal descendant":"Citizen");
+const formatCommand=(c:Citizen)=>c.order?.kind==="idle"?"Awaiting orders":c.order?.label??"Awaiting orders";
 
 export function App(){
  const sim=useMemo(()=>new Simulation(20260918),[]);
- const [,refresh]=useState(0);
  const [selectedId,setSelectedId]=useState(sim.state.founders.kingId);
- const [category,setCategory]=useState<Category>("All");
+ const [category,setCategory]=useState<Category>("Overview");
+ const [detailOpen,setDetailOpen]=useState(false);
+ const [commandNote,setCommandNote]=useState<string>();
+ const [,refresh]=useState(0);
  const selected=sim.state.citizens[selectedId]??sim.state.citizens[sim.state.founders.kingId];
- const king=sim.state.citizens[sim.state.founders.kingId],queen=sim.state.citizens[sim.state.founders.queenId];
- const advance=()=>{sim.advance(1);refresh(x=>x+1)};
- const run=(fn:()=>void)=>{try{fn();refresh(x=>x+1)}catch(e){alert(e instanceof Error?e.message:"Command failed")}};
- const giveTask=()=>{const task=window.prompt("Task instruction","Gather food");if(task)run(()=>sim.orderTask(selected,task))};
- const build=()=>run(()=>sim.orderBuild(selected,"first shelter"));
- const research=()=>run(()=>sim.orderResearch(selected,"fire and primitive tools"));
- const search=()=>run(()=>sim.orderSearch(selected,"nearby area"));
- const breedPlayer=()=>run(()=>sim.breedWith(selected,selected.sex==="male"?queen:king));
- const breedNpc=()=>{const partner=sim.livingCitizens.find(c=>c.id!==selected.id&&c.sex!==selected.sex&&sim.canReproduce(c));if(!partner){alert("No eligible opposite-sex partner is available.");return}run(()=>sim.breedWith(selected,partner))};
- const actions=[
-  {cat:"Work",icon:"✦",title:"Jobs & Work",sub:"Assign a role or work focus",fn:()=>run(()=>sim.assignJob(selected,"Gatherer"))},
-  {cat:"Work",icon:"☷",title:"Specific Task",sub:"Give a one-off instruction",fn:giveTask},
-  {cat:"Family",icon:"♡",title:"Breed with Player",sub:selected.sex==="female"?"Conceive with the King":"Father a child with the Queen",fn:breedPlayer,disabled:!sim.canReproduce(selected)},
-  {cat:"Family",icon:"∞",title:"Breed with NPC",sub:"Select an eligible partner",fn:breedNpc,disabled:!sim.canReproduce(selected)},
-  {cat:"Development",icon:"⌂",title:"Build",sub:"Order construction",fn:build},
-  {cat:"Development",icon:"◇",title:"Research",sub:"Study a technology",fn:research},
-  {cat:"Explore",icon:"⌕",title:"Search Area",sub:"Search for resources or discoveries",fn:search},
-  {cat:"Command",icon:"⚑",title:"Join Party",sub:"Join an activity or expedition",fn:()=>run(()=>sim.joinParty(selected,"gathering party"))},
-  {cat:"Command",icon:"⚐",title:"Lead This",sub:"Lead a party or work group",fn:()=>run(()=>sim.lead(selected,"gathering party"))},
-  {cat:"Command",icon:"→",title:"Move",sub:"Travel to a location",fn:()=>run(()=>sim.move(selected,"capital"))},
+
+ const rerender=()=>refresh(v=>v+1);
+ const advance=()=>{sim.advance(1);rerender()};
+ const execute=(fn:()=>void)=>{
+   try{fn();setCommandNote("Order issued successfully.");rerender()}
+   catch(e){setCommandNote(e instanceof Error?e.message:"Command failed")}
+ };
+ const giveTask=()=>{
+   const task=window.prompt("Task instruction","Gather food");
+   if(task)execute(()=>sim.orderTask(selected,task));
+ };
+ const build=()=>execute(()=>sim.orderBuild(selected,"first shelter"));
+ const research=()=>execute(()=>sim.orderResearch(selected,"fire and primitive tools"));
+ const search=()=>execute(()=>sim.orderSearch(selected,"nearby area"));
+ const breedPlayer=()=>execute(()=>sim.breedWith(selected,selected.sex==="male"?sim.state.citizens[sim.state.founders.queenId]:sim.state.citizens[sim.state.founders.kingId]));
+ const breedNpc=()=>{const partner=sim.livingCitizens.find(c=>c.id!==selected.id&&c.sex!==selected.sex&&sim.canReproduce(c));if(!partner){setCommandNote("No eligible opposite-sex NPC is available.");return}execute(()=>sim.breedWith(selected,partner))};
+
+ const actions:Action[]=[
+  {id:"job",category:"Work",icon:"✦",title:"Assign work",subtitle:"Choose a role for this citizen",run:()=>execute(()=>sim.assignJob(selected,"Gatherer"))},
+  {id:"task",category:"Work",icon:"☷",title:"Give a task",subtitle:"Issue a specific one-time instruction",run:giveTask},
+  {id:"breed-player",category:"Family",icon:"♡",title:"With the ruler",subtitle:selected.sex==="female"?"Conceive with the King":"Father a child with the Queen",disabled:!sim.canReproduce(selected),run:breedPlayer},
+  {id:"breed-npc",category:"Family",icon:"∞",title:"With another citizen",subtitle:"Find an eligible opposite-sex partner",disabled:!sim.canReproduce(selected),run:breedNpc},
+  {id:"build",category:"Develop",icon:"⌂",title:"Build",subtitle:"Order a structure or improvement",run:build},
+  {id:"research",category:"Develop",icon:"◇",title:"Research",subtitle:"Assign a subject to study",run:research},
+  {id:"search",category:"Explore",icon:"⌕",title:"Search an area",subtitle:"Look for food, materials or discoveries",run:search},
+  {id:"party",category:"Command",icon:"⚑",title:"Join a party",subtitle:"Take part in an expedition or group",run:()=>execute(()=>sim.joinParty(selected,"gathering party"))},
+  {id:"lead",category:"Command",icon:"⚐",title:"Lead a group",subtitle:"Put this citizen in charge",run:()=>execute(()=>sim.lead(selected,"gathering party"))},
+  {id:"move",category:"Command",icon:"→",title:"Move",subtitle:"Travel to a destination",run:()=>execute(()=>sim.move(selected,"capital"))},
  ];
- const visible=category==="All"?actions:actions.filter(a=>a.cat===category);
- const family=selected.parentIds.map(id=>sim.state.citizens[id]?.name).filter(Boolean);
- return <main className="game">
-  <header><div><p className="eyebrow">DYNASTY SIM · ERA 0</p><h1>The First Dynasty</h1><p className="muted">Choose a person. Their portrait becomes your command center.</p></div><div className="controls"><button onClick={advance}>Advance 1 year</button></div></header>
-  <section className="stats"><div><span>Year</span><strong>{sim.state.tick}</strong></div><div><span>Population</span><strong>{sim.livingCitizens.length}</strong></div><div><span>Founders</span><strong>2 immortal</strong></div><div><span>Supplies</span><strong>{sim.state.resources.food} food · {sim.state.resources.water} water</strong></div></section>
-  <section className="portrait-strip">{[king,queen,...sim.livingCitizens.filter(c=>!c.founder).slice(0,2)].map(c=><button className={"portrait-card "+(selected.id===c.id?"active":"")} key={c.id} onClick={()=>setSelectedId(c.id)}><img src={portraitFor(c)} /><span className="portrait-shade"/><div><b>{roleFor(c)}</b><small>{c.name} · {c.ageYears}y</small></div></button>)}</section>
-  <section className="layout">
-   <aside className="people panel"><div className="panel-heading"><p className="eyebrow">PEOPLE</p><span>{sim.livingCitizens.length}</span></div>{sim.livingCitizens.map(c=><button className={"person "+(selected.id===c.id?"selected":"")} key={c.id} onClick={()=>setSelectedId(c.id)}><img src={portraitFor(c)} /><span><b>{c.name}</b><small>{roleFor(c)} · Gen {c.generation} · {c.ageYears} years</small></span></button>)}</aside>
-   <section className="panel detail">
-    <div className="detail-top"><img className="hero-portrait" src={portraitFor(selected)}/><div><p className="eyebrow">{roleFor(selected).toUpperCase()}</p><h2>{selected.name}</h2><p>{selected.lifeStage} · Generation {selected.generation} · {selected.sex}</p><span className="status">{selected.order?.kind==="idle"?"● Idle":"● "+selected.order?.label}</span></div></div>
-    <div className="meters"><label>Health <progress value={selected.health} max="100"/><b>{selected.health}%</b></label><label>Hunger <progress value={100-selected.hunger} max="100"/><b>{selected.hunger<20?"Fed":selected.hunger+"%"}</b></label><label>Thirst <progress value={100-selected.thirst} max="100"/><b>{selected.thirst<20?"Hydrated":selected.thirst+"%"}</b></label><label>Energy <progress value={100-selected.fatigue} max="100"/><b>{Math.max(0,100-selected.fatigue)}%</b></label></div>
-    <div className="info-grid"><div><span>Need priority</span><strong>{selected.needPriority}</strong></div><div><span>Heritage</span><strong>{selected.royalGeneticHeritage?"Royal":"Ordinary"}</strong></div><div><span>Parents</span><strong>{family.length?family.join(" & "):"Founders"}</strong></div><div><span>Children</span><strong>{selected.childIds.length}</strong></div></div>
-    <h3>Genetic heritage</h3><p>Longevity {selected.genome.longevity} · Strength {selected.genome.strength} · Learning {selected.genome.learning}</p>
-    <p className="muted">{selected.genome.geneticTechIds.length?("Founder technologies: "+selected.genome.geneticTechIds.join(", ")):"No founder genetic technology."}</p>
-   </section>
-   <section className="panel actions-panel"><div className="panel-heading"><div><p className="eyebrow">COMMAND</p><h2>What should {selected.name} do?</h2></div><button className="priority" onClick={()=>run(()=>sim.setNeedPriority(selected,Math.min(100,selected.needPriority+10)))}>★ Priority {selected.needPriority}</button></div><div className="category-tabs">{categories.map(c=><button className={category===c?"active":""} key={c} onClick={()=>setCategory(c)}>{c}</button>)}</div><div className="action-grid">{visible.map(a=><button className="action" key={a.title} disabled={Boolean(a.disabled)} onClick={a.fn}><span className="action-icon">{a.icon}</span><span><b>{a.title}</b><small>{a.sub}</small></span></button>)}</div><div className="auto-note"><b>Automatic needs</b><span>Food, water and basic survival needs are fulfilled automatically when supplies exist. Higher-priority citizens are served first.</span></div></section>
+ const visibleActions=category==="Overview"?actions:actions.filter(a=>a.category===category);
+ const select=(id:string)=>{setSelectedId(id);setCommandNote(undefined);setDetailOpen(true)};
+ const maxGen=Math.max(...sim.livingCitizens.map(c=>c.generation));
+ return <main className="app-shell">
+  <header className="topbar">
+    <div className="brand"><div className="brand-mark">DS</div><div><span>DYNASTY SIM</span><strong>The First Dynasty</strong></div></div>
+    <div className="era-chip"><span>ERA 0</span><b>Founding Age</b></div>
+    <div className="top-actions"><div className="resource-chip"><span>◈</span><b>{sim.state.resources.food}</b><em>Food</em></div><div className="resource-chip"><span>◉</span><b>{sim.state.resources.water}</b><em>Water</em></div><button className="advance-btn" onClick={advance}>Advance year <span>→</span></button></div>
+  </header>
+
+  <section className="command-strip">
+    <div><span className="label">YEAR</span><strong>{sim.state.tick}</strong></div>
+    <div><span className="label">POPULATION</span><strong>{sim.livingCitizens.length}</strong></div>
+    <div><span className="label">GENERATION</span><strong>{maxGen}</strong></div>
+    <div className="needs-legend"><span className="dot good"/><span>Supplies automatic</span><span className="dot gold"/><span>Priority {selected.needPriority}</span></div>
   </section>
-  <section className="bottom-grid"><div className="panel chronicle"><p className="eyebrow">CHRONICLE</p><h2>Recent history</h2>{sim.state.chronicle.slice(-8).reverse().map((e,i)=><p key={i}>{e}</p>)}</div><div className="panel supplies"><p className="eyebrow">CIVILIZATION</p><h2>Early resources</h2><div className="resource-row"><span>Food</span><strong>{sim.state.resources.food}</strong></div><div className="resource-row"><span>Water</span><strong>{sim.state.resources.water}</strong></div><div className="resource-row"><span>Wood</span><strong>{sim.state.resources.wood}</strong></div><div className="resource-row"><span>Stone</span><strong>{sim.state.resources.stone}</strong></div></div></section>
+
+  <section className="stage">
+    <div className="scene">
+      <div className="scene-copy">
+        <span className="label">FOUNDERS' CAMP</span>
+        <h1>The dynasty begins.</h1>
+        <p>Two immortal founders. One settlement. Every life matters.</p>
+        <div className="scene-status"><span className="pulse"/>Simulation running <b>Year {sim.state.tick}</b></div>
+      </div>
+      <div className="scene-sun"/>
+      <div className="mountain mountain-a"/><div className="mountain mountain-b"/><div className="campfire"/><div className="tent tent-a"/><div className="tent tent-b"/>
+    </div>
+
+    <aside className="roster panel">
+      <div className="panel-head"><div><span className="label">PEOPLE</span><h2>Your people</h2></div><b>{sim.livingCitizens.length}</b></div>
+      <div className="roster-list">{sim.livingCitizens.map(c=><button className={"roster-item "+(selected.id===c.id?"selected":"")} key={c.id} onClick={()=>select(c.id)}><img src={portraitFor(c)}/><span><b>{c.name}</b><small>{roleFor(c)} · {c.ageYears} years</small><em>{formatCommand(c)}</em></span><i>›</i></button>)}</div>
+      <div className="auto-box"><span className="auto-icon">✧</span><div><b>Needs are autonomous</b><small>Food, water and basic necessities are handled automatically when supplies exist.</small></div></div>
+    </aside>
+  </section>
+
+  {detailOpen&&<div className="sheet-backdrop" onClick={()=>setDetailOpen(false)}>
+    <section className="character-sheet" onClick={e=>e.stopPropagation()}>
+      <button className="sheet-close" onClick={()=>setDetailOpen(false)}>×</button>
+      <div className="sheet-top">
+        <div className="portrait-frame"><img src={portraitFor(selected)}/><span>{selected.founder?"FOUNDER":"CITIZEN"}</span></div>
+        <div className="identity"><span className="label">{roleFor(selected).toUpperCase()}</span><h2>{selected.name}</h2><p>{selected.lifeStage} · {selected.ageYears} years · Generation {selected.generation}</p><div className="command-badge"><span className="pulse"/>{formatCommand(selected)}</div></div>
+        <div className="priority-control"><span>NEED PRIORITY</span><strong>{selected.needPriority}</strong><button onClick={()=>execute(()=>sim.setNeedPriority(selected,Math.min(100,selected.needPriority+10)))}>Raise</button></div>
+      </div>
+
+      <div className="need-row"><div><span>Health</span><strong>{selected.health}%</strong><progress value={selected.health} max="100"/></div><div><span>Hunger</span><strong>{selected.hunger<20?"Fed":selected.hunger+"%"}</strong><progress value={100-selected.hunger} max="100"/></div><div><span>Thirst</span><strong>{selected.thirst<20?"Hydrated":selected.thirst+"%"}</strong><progress value={100-selected.thirst} max="100"/></div><div><span>Energy</span><strong>{Math.max(0,100-selected.fatigue)}%</strong><progress value={100-selected.fatigue} max="100"/></div></div>
+
+      <div className="category-row">{(["Overview","Work","Family","Develop","Explore","Command"] as Category[]).map(c=><button className={category===c?"active":""} key={c} onClick={()=>setCategory(c)}>{c}</button>)}</div>
+
+      <div className="actions-area">
+        <div className="actions-title"><div><span className="label">ORDERS</span><h3>Direct {selected.name}</h3></div><span className="muted">Commands become simulation state.</span></div>
+        <div className="action-grid">{visibleActions.map(a=><button disabled={a.disabled} className="action-card" key={a.id} onClick={a.run}><span className="action-icon">{a.icon}</span><span><b>{a.title}</b><small>{a.subtitle}</small></span><i>›</i></button>)}</div>
+        {commandNote&&<div className="command-note"><span>✦</span>{commandNote}</div>}
+      </div>
+
+      <div className="sheet-foot"><div><span>Heritage</span><strong>{selected.royalGeneticHeritage?"Royal bloodline":"Ordinary lineage"}</strong></div><div><span>Parents</span><strong>{selected.parentIds.length?selected.parentIds.map(id=>sim.state.citizens[id]?.name).filter(Boolean).join(" & "):"Founders"}</strong></div><div><span>Children</span><strong>{selected.childIds.length}</strong></div><div><span>Genetic tech</span><strong>{selected.genome.geneticTechIds.length||"—"}</strong></div></div>
+    </section>
+  </div>}
+
+  <nav className="mobile-nav"><button className="active">◫<span>Camp</span></button><button>♙<span>People</span></button><button>◇<span>Research</span></button><button>≡<span>Chronicle</span></button></nav>
  </main>;
 }
