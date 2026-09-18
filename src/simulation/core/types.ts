@@ -3,37 +3,35 @@ export type LifeStage = "infant"|"child"|"adolescent"|"adult"|"matureAdult"|"eld
 export type CitizenId = string;
 
 export interface Pregnancy {
-  motherId:CitizenId;
-  fatherId:CitizenId;
-  conceptionTick:number;
-  dueTick:number;
+  motherId:CitizenId; fatherId:CitizenId; conceptionTick:number; dueTick:number;
 }
-
 export interface Genome {
   longevity:number; diseaseResistance:number; strength:number; endurance:number;
   intelligence:number; fertility:number; learning:number;
-  founderOrigin?: "king"|"queen";
-  geneticTechIds:string[];
+  founderOrigin?: "king"|"queen"; geneticTechIds:string[];
 }
-
 export interface Citizen {
-  id:CitizenId; name:string; sex:Sex; generation:number;
-  birthTick:number; deathTick?:number; founder:boolean;
-  genome:Genome; lifeStage:LifeStage; ageYears:number;
+  id:CitizenId; name:string; sex:Sex; generation:number; birthTick:number; deathTick?:number;
+  founder:boolean; genome:Genome; lifeStage:LifeStage; ageYears:number;
   health:number; hunger:number; thirst:number; fatigue:number;
-  parentIds:CitizenId[]; childIds:CitizenId[]; spouseId?:CitizenId;
-  pregnancy?:Pregnancy;
+  parentIds:CitizenId[]; childIds:CitizenId[]; spouseId?:CitizenId; pregnancy?:Pregnancy;
   royalGeneticHeritage:boolean;
 }
-
 export interface SimulationState {
   version:1; seed:number; tick:number; founders:{kingId:CitizenId; queenId:CitizenId};
-  nextCitizenNumber:number; citizens:Record<CitizenId,Citizen>;
-  chronicle:string[];
+  nextCitizenNumber:number; citizens:Record<CitizenId,Citizen>; chronicle:string[];
 }
-
 export interface GeneticTechnology {
   id:string; name:string; description:string; cost:number;
-  mode:"activeFounder"|"passiveFounder"|"breeding";
-  prerequisiteIds:string[];
+  mode:"activeFounder"|"passiveFounder"|"breeding"; prerequisiteIds:string[];
 }
+export type SimulationCommand =
+  | {type:"advance"; years:number}
+  | {type:"marry"; partnerAId:CitizenId; partnerBId:CitizenId}
+  | {type:"conceive"; motherId:CitizenId; fatherId:CitizenId}
+  | {type:"createChild"; parentAId:CitizenId; parentBId:CitizenId};
+export interface SimulationEvent {
+  type:"TickAdvanced"|"CitizenMarried"|"PregnancyStarted"|"CitizenBorn"|"CitizenDied"|"FounderGeneticTechApplied";
+  tick:number; message:string; citizenIds?:CitizenId[];
+}
+export interface SimulationSnapshot { state:SimulationState; rngState:number; }
