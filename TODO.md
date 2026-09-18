@@ -3,60 +3,62 @@
 Legend: [ ] not started · [~] in progress · [x] complete
 
 ## M0 — Repository foundation
-- [ ] Vite + React + TypeScript app
-- [ ] Source directory structure
-- [ ] Test framework
-- [ ] Typecheck script
-- [ ] Production build script
+- [x] Vite + React + TypeScript app
+- [x] Source directory structure
+- [x] Test framework
+- [x] Typecheck script
+- [x] Production build script
 - [ ] Lint/format setup
-- [ ] Initial game shell
-- [ ] Simulation/UI boundary docs
-- [ ] Versioned save schema placeholder
+- [x] Initial game shell
+- [x] Simulation/UI boundary docs
+- [x] Versioned save schema placeholder
 - [ ] GitHub Pages deployment path verified
 
 ## M1 — Deterministic simulation kernel
-- [ ] Simulation clock
+
+> Vertical-slice kernel is implemented; command/event primitives, snapshot/restore, scheduler, and debug inspector remain.
+- [x] Simulation clock
 - [ ] Configurable time scale
-- [ ] Seeded RNG
-- [ ] Stable entity IDs
+- [x] Seeded RNG
+- [x] Stable entity IDs
 - [ ] Tick scheduler
 - [ ] Command/event primitives
-- [ ] World state root
+- [x] World state root
 - [ ] Snapshot/restore interfaces
-- [ ] Deterministic replay test
+- [x] Deterministic replay test
 - [ ] Simulation debug inspector
 
 ## M2 — Founders and human life cycle
-- [ ] Citizen schema
-- [ ] Exactly two founders
-- [ ] Founder immortality
-- [ ] Normal aging
-- [ ] Life stages
-- [ ] Hunger
-- [ ] Thirst
-- [ ] Energy/fatigue
-- [ ] Baseline health
+- [x] Citizen schema
+- [x] Exactly two founders
+- [x] Founder immortality
+- [x] Normal aging
+- [x] Life stages
+- [x] Hunger
+- [x] Thirst
+- [x] Energy/fatigue
+- [x] Baseline health
 - [ ] Injury state
-- [ ] Descendant death
+- [x] Descendant death
 - [ ] Death causes
 - [ ] Selected-citizen UI
-- [ ] Birth/death tests
+- [x] Birth/death tests
 
 ## M3 — Families and genetics
-- [ ] Parent references
-- [ ] Child queries
+- [x] Parent references
+- [x] Child queries
 - [ ] Sibling relationships
 - [ ] Spouse/partner relationship
 - [ ] Household model
-- [ ] Compact genome
-- [ ] Trait inheritance
-- [ ] Trait variation
+- [x] Compact genome
+- [x] Trait inheritance
+- [x] Trait variation
 - [ ] Fertility
-- [ ] Pregnancy/birth flow
+- [x] Pregnancy/birth flow
 - [ ] Genealogy queries
 - [ ] Family-tree UI
-- [ ] Genetics UI
-- [ ] Inheritance tests
+- [x] Genetics UI
+- [x] Inheritance tests
 
 ## M4 — Primitive survival
 - [ ] Resource types
@@ -209,19 +211,19 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Documentation updated where needed
 - [ ] TODO status updated
 ## Genetics-specific acceptance checklist
-- [ ] Create separate Genetic Technology Tree data model
-- [ ] Distinguish genetic technology unlock from genetic trait inheritance
-- [ ] Add founder-only genetic modification state
-- [ ] Support active founder genetic upgrades
+- [x] Create separate Genetic Technology Tree data model
+- [x] Distinguish genetic technology unlock from genetic trait inheritance
+- [x] Add founder-only genetic modification state
+- [x] Support active founder genetic upgrades
 - [ ] Support passive founder genetic upgrades
-- [ ] Track genetic technology provenance on founder traits
-- [ ] Implement founder × founder inheritance
-- [ ] Implement founder × NPC royal offspring inheritance
+- [x] Track genetic technology provenance on founder traits
+- [x] Implement founder × founder inheritance
+- [x] Implement founder × NPC royal offspring inheritance
 - [ ] Implement royal descendant × NPC inheritance
 - [ ] Implement NPC × NPC ordinary inheritance with no genetic-tech advancement
 - [ ] Prevent NPC breeding from unlocking genetic technologies
-- [ ] Add Royal/Founder genetic heritage classification
+- [x] Add Royal/Founder genetic heritage classification
 - [ ] Expose trait provenance in citizen genetics UI
-- [ ] Add automated tests proving NPCs cannot create genetic improvements
-- [ ] Add automated tests proving founder upgrades can propagate through descendants
-- [ ] Add automated tests proving founders remain immortal
+- [x] Add automated tests proving NPCs cannot create genetic improvements
+- [x] Add automated tests proving founder upgrades can propagate through descendants
+- [x] Add automated tests proving founders remain immortal
