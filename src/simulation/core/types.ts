@@ -10,6 +10,9 @@ export interface Citizen {id:CitizenId;name:string;sex:Sex;generation:number;bir
 export interface SimulationResources {food:number;water:number;wood:number;stone:number;}
 export interface BuildingProject {id:string;name:string;description:string;workRequired:number;workDone:number;startedTick:number;completedTick?:number;workerIds:CitizenId[];}
 export interface ResearchProject {id:string;name:string;description:string;researchRequired:number;researchDone:number;startedTick:number;completedTick?:number;researcherIds:CitizenId[];prerequisites:string[];}
-export interface ResearchDefinition {id:string;name:string;description:string;cost:number;prerequisites:string[];}
+export type TechBranch="Survival"|"Settlement"|"Craft"|"Knowledge";
+export interface TechnologyDefinition {id:string;name:string;description:string;branch:TechBranch;era:number;cost:number;prerequisites:string[];unlocksBuildingIds:string[];}
+export interface BuildingDefinition {id:string;name:string;description:string;workRequired:number;woodCost:number;stoneCost:number;requiredTechId:string;}
+export interface ResearchDefinition {id:string;name:string;description:string;cost:number;prerequisites:string[];branch?:TechBranch;era?:number;unlocksBuildingIds?:string[];}
 export interface SimulationState {version:1;seed:number;tick:number;founders:{kingId:CitizenId;queenId:CitizenId};nextCitizenNumber:number;citizens:Record<CitizenId,Citizen>;resources:SimulationResources;buildings:BuildingProject[];completedResearch:string[];researchProjects:ResearchProject[];chronicle:string[];}
 export interface GeneticTechnology {id:string;name:string;description:string;cost:number;mode:"activeFounder"|"passiveFounder"|"breeding";prerequisiteIds:string[];}
