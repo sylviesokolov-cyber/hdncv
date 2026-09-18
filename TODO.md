@@ -75,14 +75,14 @@ Legend: [ ] not started · [~] in progress · [x] complete
 - [ ] Fire maintenance
 - [ ] First shelter
 - [ ] Early-world map
-- [x] Survival alerts
+- [ ] Survival alerts
 - [ ] Playable 2-founder survival loop
 
 ## M5 — Work and production
 - [x] Job system
 - [x] Gatherer
 - [ ] Hunter
-- [x] Builder
+- [ ] Builder
 - [ ] Firekeeper/cook
 - [ ] Toolmaker
 - [ ] Skill levels
