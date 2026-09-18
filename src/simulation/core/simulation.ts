@@ -1,206 +1,29 @@
-import type {Citizen, CitizenId, Genome, GeneticTechnology, LifeStage, Pregnancy, SimulationState, Sex} from "./types";
+import type {Citizen,CitizenId,Genome,GeneticTechnology,LifeStage,Pregnancy,SimulationCommand,SimulationEvent,SimulationSnapshot,SimulationState,Sex} from "./types";
 import {SeededRng} from "./rng";
-
+import {TickScheduler} from "./scheduler";
 const stage=(age:number):LifeStage=>age<2?"infant":age<8?"child":age<15?"adolescent":age<40?"adult":age<65?"matureAdult":"elder";
-const GESTATION_YEARS=1;
-const MIN_REPRODUCTIVE_AGE=15;
-const MAX_REPRODUCTIVE_AGE=45;
-const genome=(rng:SeededRng, founderOrigin?: "king"|"queen"):Genome=>({
-  longevity:rng.int(40,80), diseaseResistance:rng.int(35,75), strength:rng.int(35,75),
-  endurance:rng.int(35,75), intelligence:rng.int(35,75), fertility:rng.int(35,75),
-  learning:rng.int(35,75), founderOrigin, geneticTechIds:[]
-});
-
-export class Simulation {
-  readonly rng:SeededRng;
-  state:SimulationState;
-  constructor(seed=12345){
-    this.rng=new SeededRng(seed);
-    const king=this.makeFounder("male","King");
-    const queen=this.makeFounder("female","Queen");
-    this.state={version:1,seed,tick:0,founders:{kingId:king.id,queenId:queen.id},nextCitizenNumber:3,citizens:{[king.id]:king,[queen.id]:queen},chronicle:["The Dynasty begins with the immortal King and Queen."]};
-  }
-  private makeFounder(sex:Sex,name:string):Citizen {
-    const id=sex==="male"?"c_king":"c_queen";
-    return {id,name,sex,generation:0,birthTick:0,founder:true,genome:genome(this.rng,sex==="male"?"king":"queen"),lifeStage:"adult",ageYears:25,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[],childIds:[],royalGeneticHeritage:true};
-  }
-  advance(years=1){
-    for(let y=0;y<years;y++){
-      this.state.tick++;
-      for(const c of Object.values(this.state.citizens)){
-        if(c.deathTick!==undefined)continue;
-        if(!c.founder){
-          c.ageYears++;
-          c.lifeStage=stage(c.ageYears);
-          c.hunger=Math.min(100,c.hunger+4);
-          c.thirst=Math.min(100,c.thirst+5);
-          c.fatigue=Math.min(100,c.fatigue+3);
-          if(c.ageYears>c.genome.longevity){
-            c.deathTick=this.state.tick;
-            c.health=0;
-            this.state.chronicle.push(c.name+" died at age "+c.ageYears+".");
-          }
-        }
-      }
-      this.processPregnancies();
-    }
-  }
-
-  private processPregnancies():void {
-    const due=Object.values(this.state.citizens).filter(c=>c.pregnancy?.dueTick===this.state.tick);
-    for(const mother of due){
-      const pregnancy=mother.pregnancy;
-      if(!pregnancy)continue;
-      const father=this.state.citizens[pregnancy.fatherId];
-      if(mother.deathTick!==undefined || !father || father.deathTick!==undefined){
-        delete mother.pregnancy;
-        continue;
-      }
-      this.birth(mother,father);
-    }
-  }
-
-  private birth(mother:Citizen,father:Citizen):Citizen {
-    const childSex:Sex=this.rng.next()<0.5?"male":"female";
-    const choose=(a:number,b:number)=>Math.round((a+b)/2)+this.rng.int(-3,3);
-    const founderParent=mother.founder?mother:father.founder?father:undefined;
-    const founderOrigin=founderParent?.genome.founderOrigin;
-    const geneticTechIds=founderParent ? [...founderParent.genome.geneticTechIds] : [];
-    const child:Citizen={
-      id:"c_"+this.state.nextCitizenNumber++,
-      name:childSex==="male"?"Son":"Daughter",
-      sex:childSex,
-      generation:Math.max(mother.generation,father.generation)+1,
-      birthTick:this.state.tick,
-      founder:false,
-      genome:{
-        longevity:choose(mother.genome.longevity,father.genome.longevity),
-        diseaseResistance:choose(mother.genome.diseaseResistance,father.genome.diseaseResistance),
-        strength:choose(mother.genome.strength,father.genome.strength),
-        endurance:choose(mother.genome.endurance,father.genome.endurance),
-        intelligence:choose(mother.genome.intelligence,father.genome.intelligence),
-        fertility:choose(mother.genome.fertility,father.genome.fertility),
-        learning:choose(mother.genome.learning,father.genome.learning),
-        founderOrigin,
-        geneticTechIds
-      },
-      lifeStage:"infant",ageYears:0,health:100,hunger:0,thirst:0,fatigue:0,
-      parentIds:[mother.id,father.id],childIds:[],
-      royalGeneticHeritage:Boolean(mother.founder||father.founder||mother.royalGeneticHeritage||father.royalGeneticHeritage)
-    };
-    this.state.citizens[child.id]=child;
-    this.state.citizens[mother.id].childIds.push(child.id);
-    this.state.citizens[father.id].childIds.push(child.id);
-    delete mother.pregnancy;
-    this.state.chronicle.push(child.name+" was born to "+mother.name+" and "+father.name+".");
-    return child;
-  }
-  get livingCitizens(){return Object.values(this.state.citizens).filter(c=>c.deathTick===undefined);}
-
-  marry(partnerA:Citizen,partnerB:Citizen):void {
-    if(partnerA.id===partnerB.id)throw new Error("A citizen cannot marry themselves.");
-    if(partnerA.sex===partnerB.sex)throw new Error("Marriage requires opposite-sex partners in this MVP.");
-    if(partnerA.deathTick!==undefined||partnerB.deathTick!==undefined)throw new Error("A deceased citizen cannot marry.");
-    if(partnerA.spouseId||partnerB.spouseId)throw new Error("A citizen who already has a spouse cannot marry.");
-    partnerA.spouseId=partnerB.id;
-    partnerB.spouseId=partnerA.id;
-    this.state.chronicle.push(partnerA.name+" and "+partnerB.name+" married.");
-  }
-
-  getSiblings(citizen:Citizen|CitizenId):Citizen[] {
-    const id=typeof citizen==="string"?citizen:citizen.id;
-    const state=this.state.citizens[id];
-    if(!state)return [];
-
-    const parentIds=new Set(state.parentIds);
-    return Object.values(this.state.citizens).filter(other =>
-      other.id!==state.id && other.parentIds.some(parentId=>parentIds.has(parentId))
-    );
-  }
-
-  getAncestors(citizen:Citizen|CitizenId):Citizen[] {
-    const result:Citizen[]=[];
-    const seen=new Set<CitizenId>();
-    const visit=(id:CitizenId)=>{
-      const citizen=this.state.citizens[id];
-      if(!citizen)return;
-      for(const parentId of citizen.parentIds){
-        if(seen.has(parentId))continue;
-        seen.add(parentId);
-        const parent=this.state.citizens[parentId];
-        if(parent)result.push(parent);
-        visit(parentId);
-      }
-    };
-    visit(typeof citizen==="string"?citizen:citizen.id);
-    return result;
-  }
-
-  getDescendants(citizen:Citizen|CitizenId):Citizen[] {
-    const result:Citizen[]=[];
-    const seen=new Set<CitizenId>();
-    const visit=(id:CitizenId)=>{
-      const citizen=this.state.citizens[id];
-      if(!citizen)return;
-      for(const childId of citizen.childIds){
-        if(seen.has(childId))continue;
-        seen.add(childId);
-        const child=this.state.citizens[childId];
-        if(child)result.push(child);
-        visit(childId);
-      }
-    };
-    visit(typeof citizen==="string"?citizen:citizen.id);
-    return result;
-  }
-  createChild(parentA:Citizen,parentB:Citizen):Citizen {
-    const parentAState=this.state.citizens[parentA.id];
-    const parentBState=this.state.citizens[parentB.id];
-    if(!parentAState||!parentBState)throw new Error("Both parents must belong to this simulation.");
-    parentA=parentAState;
-    parentB=parentBState;
-    if(parentA.sex===parentB.sex)throw new Error("Founders need opposite-sex breeding for this MVP.");
-    if(parentA.deathTick!==undefined||parentB.deathTick!==undefined)throw new Error("A deceased citizen cannot reproduce.");
-    const childSex:Sex=this.rng.next()<0.5?"male":"female";
-    const choose=(a:number,b:number)=>Math.round((a+b)/2)+this.rng.int(-3,3);
-    const founderOrigin=parentA.founder?(parentA.genome.founderOrigin):parentB.founder?(parentB.genome.founderOrigin):undefined;
-    const ids=parentA.founder||parentB.founder?parentA.founder?parentA.genome.geneticTechIds:parentB.genome.geneticTechIds:[];
-    const child:Citizen={id:"c_"+this.state.nextCitizenNumber++,name:childSex==="male"?"Son":"Daughter",sex:childSex,generation:Math.max(parentA.generation,parentB.generation)+1,birthTick:this.state.tick,founder:false,genome:{longevity:choose(parentA.genome.longevity,parentB.genome.longevity),diseaseResistance:choose(parentA.genome.diseaseResistance,parentB.genome.diseaseResistance),strength:choose(parentA.genome.strength,parentB.genome.strength),endurance:choose(parentA.genome.endurance,parentB.genome.endurance),intelligence:choose(parentA.genome.intelligence,parentB.genome.intelligence),fertility:choose(parentA.genome.fertility,parentB.genome.fertility),learning:choose(parentA.genome.learning,parentB.genome.learning),founderOrigin,geneticTechIds:[...ids]},lifeStage:"infant",ageYears:0,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[parentA.id,parentB.id],childIds:[],royalGeneticHeritage:Boolean(parentA.founder||parentB.founder||parentA.royalGeneticHeritage||parentB.royalGeneticHeritage)};
-    this.state.citizens[child.id]=child;
-    this.state.citizens[parentA.id].childIds.push(child.id);
-    this.state.citizens[parentB.id].childIds.push(child.id);
-    this.state.chronicle.push(child.name+" was born to "+parentA.name+" and "+parentB.name+".");
-    return child;
-  }
-  canReproduce(citizen:Citizen):boolean {
-    return citizen.deathTick===undefined &&
-      citizen.ageYears>=MIN_REPRODUCTIVE_AGE && citizen.ageYears<=MAX_REPRODUCTIVE_AGE &&
-      (citizen.lifeStage==="adult" || citizen.lifeStage==="matureAdult");
-  }
-
-  conceive(mother:Citizen,father:Citizen):Pregnancy {
-    const motherState=this.state.citizens[mother.id];
-    const fatherState=this.state.citizens[father.id];
-    if(!motherState||!fatherState)throw new Error("Both parents must belong to this simulation.");
-    if(motherState.sex!=="female"||fatherState.sex!=="male")throw new Error("Pregnancy requires a female mother and male father.");
-    if(!this.canReproduce(motherState)||!this.canReproduce(fatherState))throw new Error("Both parents must be of reproductive age.");
-    if(motherState.pregnancy)throw new Error("A pregnant citizen cannot conceive again.");
-    const pregnancy:Pregnancy={
-      motherId:motherState.id,
-      fatherId:fatherState.id,
-      conceptionTick:this.state.tick,
-      dueTick:this.state.tick+GESTATION_YEARS
-    };
-    motherState.pregnancy=pregnancy;
-    this.state.chronicle.push(motherState.name+" conceived a child with "+fatherState.name+".");
-    return pregnancy;
-  }
-
-  applyFounderGeneticTech(founderId:CitizenId,tech:GeneticTechnology){
-    const f=this.state.citizens[founderId];
-    if(!f?.founder)throw new Error("Genetic technology can only be applied to a founder.");
-    if(!f.genome.geneticTechIds.includes(tech.id))f.genome.geneticTechIds.push(tech.id);
-    if(tech.mode==="activeFounder")f.genome.longevity+=10;
-    this.state.chronicle.push(tech.name+" was applied to "+f.name+".");
-  }
+const GESTATION_YEARS=1,MIN_REPRODUCTIVE_AGE=15,MAX_REPRODUCTIVE_AGE=45;
+const genome=(rng:SeededRng,founderOrigin?:"king"|"queen"):Genome=>({longevity:rng.int(40,80),diseaseResistance:rng.int(35,75),strength:rng.int(35,75),endurance:rng.int(35,75),intelligence:rng.int(35,75),fertility:rng.int(35,75),learning:rng.int(35,75),founderOrigin,geneticTechIds:[]});
+export class Simulation{
+ readonly rng:SeededRng; readonly scheduler=new TickScheduler(); state:SimulationState; private events:SimulationEvent[]=[];
+ constructor(seed=12345){this.rng=new SeededRng(seed);const king=this.makeFounder("male","King"),queen=this.makeFounder("female","Queen");this.state={version:1,seed,tick:0,founders:{kingId:king.id,queenId:queen.id},nextCitizenNumber:3,citizens:{[king.id]:king,[queen.id]:queen},chronicle:["The Dynasty begins with the immortal King and Queen."]};this.scheduler.add(t=>this.processPregnancies(t));}
+ private makeFounder(sex:Sex,name:string):Citizen{const id=sex==="male"?"c_king":"c_queen";return{id,name,sex,generation:0,birthTick:0,founder:true,genome:genome(this.rng,sex==="male"?"king":"queen"),lifeStage:"adult",ageYears:25,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[],childIds:[],royalGeneticHeritage:true};}
+ private emit(type:SimulationEvent["type"],message:string,citizenIds?:CitizenId[]){const e:SimulationEvent={type,tick:this.state.tick,message,citizenIds};this.events.push(e);this.state.chronicle.push(message);}
+ getRecentEvents(limit=20){return this.events.slice(-limit);}
+ advance(years=1){if(!Number.isInteger(years)||years<0)throw new Error("Advance requires a non-negative integer number of years.");for(let y=0;y<years;y++){this.state.tick++;for(const c of Object.values(this.state.citizens)){if(c.deathTick!==undefined||c.founder)continue;c.ageYears++;c.lifeStage=stage(c.ageYears);c.hunger=Math.min(100,c.hunger+4);c.thirst=Math.min(100,c.thirst+5);c.fatigue=Math.min(100,c.fatigue+3);if(c.ageYears>c.genome.longevity){c.deathTick=this.state.tick;c.health=0;this.emit("CitizenDied",c.name+" died at age "+c.ageYears+".",[c.id]);}}this.scheduler.run(this.state.tick);this.emit("TickAdvanced","Year "+this.state.tick+" advanced.");}}
+ private processPregnancies(tick:number){for(const mother of Object.values(this.state.citizens).filter(c=>c.pregnancy?.dueTick===tick)){const p=mother.pregnancy;if(!p)continue;const father=this.state.citizens[p.fatherId];if(mother.deathTick!==undefined||!father||father.deathTick!==undefined){delete mother.pregnancy;continue;}this.birth(mother,father);}}
+ private birth(mother:Citizen,father:Citizen){const childSex:Sex=this.rng.next()<.5?"male":"female";const choose=(a:number,b:number)=>Math.max(1,Math.round((a+b)/2)+this.rng.int(-3,3));const founder=mother.founder?mother:father.founder?father:undefined;const child:Citizen={id:"c_"+this.state.nextCitizenNumber++,name:childSex==="male"?"Son":"Daughter",sex:childSex,generation:Math.max(mother.generation,father.generation)+1,birthTick:this.state.tick,founder:false,genome:{longevity:choose(mother.genome.longevity,father.genome.longevity),diseaseResistance:choose(mother.genome.diseaseResistance,father.genome.diseaseResistance),strength:choose(mother.genome.strength,father.genome.strength),endurance:choose(mother.genome.endurance,father.genome.endurance),intelligence:choose(mother.genome.intelligence,father.genome.intelligence),fertility:choose(mother.genome.fertility,father.genome.fertility),learning:choose(mother.genome.learning,father.genome.learning),founderOrigin:founder?.genome.founderOrigin,geneticTechIds:founder?[...founder.genome.geneticTechIds]:[]},lifeStage:"infant",ageYears:0,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[mother.id,father.id],childIds:[],royalGeneticHeritage:Boolean(mother.founder||father.founder||mother.royalGeneticHeritage||father.royalGeneticHeritage)};this.state.citizens[child.id]=child;mother.childIds.push(child.id);father.childIds.push(child.id);delete mother.pregnancy;this.emit("CitizenBorn",child.name+" was born to "+mother.name+" and "+father.name+".",[child.id,mother.id,father.id]);return child;}
+ get livingCitizens(){return Object.values(this.state.citizens).filter(c=>c.deathTick===undefined);}
+ private resolve(c:Citizen|CitizenId){const value=this.state.citizens[typeof c==="string"?c:c.id];if(!value)throw new Error("Citizen does not belong to this simulation.");return value;}
+ marry(a:Citizen,b:Citizen){a=this.resolve(a);b=this.resolve(b);if(a.id===b.id)throw new Error("A citizen cannot marry themselves.");if(a.sex===b.sex)throw new Error("Marriage requires opposite-sex partners in this MVP.");if(a.deathTick!==undefined||b.deathTick!==undefined)throw new Error("A deceased citizen cannot marry.");if(a.spouseId||b.spouseId)throw new Error("A citizen who already has a spouse cannot marry.");a.spouseId=b.id;b.spouseId=a.id;this.emit("CitizenMarried",a.name+" and "+b.name+" married.",[a.id,b.id]);}
+ getSiblings(c:Citizen|CitizenId){const s=this.resolve(c),p=new Set(s.parentIds);return Object.values(this.state.citizens).filter(o=>o.id!==s.id&&o.parentIds.some(x=>p.has(x)));}
+ getAncestors(c:Citizen|CitizenId){const result:Citizen[]=[];const seen=new Set<CitizenId>();const visit=(id:CitizenId)=>{const c=this.state.citizens[id];if(!c)return;for(const p of c.parentIds){if(seen.has(p))continue;seen.add(p);const parent=this.state.citizens[p];if(parent)result.push(parent);visit(p);}};visit(this.resolve(c).id);return result;}
+ getDescendants(c:Citizen|CitizenId){const result:Citizen[]=[];const seen=new Set<CitizenId>();const visit=(id:CitizenId)=>{const c=this.state.citizens[id];if(!c)return;for(const childId of c.childIds){if(seen.has(childId))continue;seen.add(childId);const child=this.state.citizens[childId];if(child)result.push(child);visit(childId);}};visit(this.resolve(c).id);return result;}
+ canReproduce(c:Citizen){const x=this.resolve(c);return x.deathTick===undefined&&x.ageYears>=MIN_REPRODUCTIVE_AGE&&x.ageYears<=MAX_REPRODUCTIVE_AGE&&(x.lifeStage==="adult"||x.lifeStage==="matureAdult");}
+ createChild(a:Citizen,b:Citizen){a=this.resolve(a);b=this.resolve(b);if(a.sex===b.sex)throw new Error("Breeding requires opposite-sex parents in this MVP.");if(a.deathTick!==undefined||b.deathTick!==undefined)throw new Error("A deceased citizen cannot reproduce.");if(!this.canReproduce(a)||!this.canReproduce(b))throw new Error("Both parents must be of reproductive age.");return this.birth(a,b);}
+ conceive(mother:Citizen,father:Citizen):Pregnancy{const m=this.resolve(mother),f=this.resolve(father);if(m.sex!=="female"||f.sex!=="male")throw new Error("Pregnancy requires a female mother and male father.");if(!this.canReproduce(m)||!this.canReproduce(f))throw new Error("Both parents must be of reproductive age.");if(m.pregnancy)throw new Error("A pregnant citizen cannot conceive again.");const p={motherId:m.id,fatherId:f.id,conceptionTick:this.state.tick,dueTick:this.state.tick+GESTATION_YEARS};m.pregnancy=p;this.emit("PregnancyStarted",m.name+" conceived a child with "+f.name+".",[m.id,f.id]);return p;}
+ applyFounderGeneticTech(id:CitizenId,tech:GeneticTechnology){const f=this.resolve(id);if(!f.founder)throw new Error("Genetic technology can only be applied to a founder.");if(!f.genome.geneticTechIds.includes(tech.id)){f.genome.geneticTechIds.push(tech.id);if(tech.mode==="activeFounder")f.genome.longevity+=10;this.emit("FounderGeneticTechApplied",tech.name+" was applied to "+f.name+".",[f.id]);}}
+ dispatch(command:SimulationCommand){const before=this.events.length;switch(command.type){case"advance":this.advance(command.years);break;case"marry":this.marry(this.resolve(command.partnerAId),this.resolve(command.partnerBId));break;case"conceive":this.conceive(this.resolve(command.motherId),this.resolve(command.fatherId));break;case"createChild":this.createChild(this.resolve(command.parentAId),this.resolve(command.parentBId));break;}return this.events.slice(before);}
+ snapshot():SimulationSnapshot{return{state:JSON.parse(JSON.stringify(this.state)),rngState:this.rng.state};}
+ restore(snapshot:SimulationSnapshot){if(snapshot.state.version!==1)throw new Error("Unsupported simulation snapshot version.");this.state=JSON.parse(JSON.stringify(snapshot.state));this.rng.state=snapshot.rngState;this.events=[];}
 }
