@@ -3,6 +3,7 @@ import {Simulation} from "../simulation/core/simulation";
 import type {Citizen} from "../simulation/core/types";
 
 type Category="Overview"|"Work"|"Family"|"Develop"|"Explore"|"Command";
+type MainTab="Camp"|"People"|"Resources"|"Research";
 type Action={id:string;category:Exclude<Category,"Overview">;icon:string;title:string;subtitle:string;disabled?:boolean;run:()=>void};
 
 const base=import.meta.env.BASE_URL;
@@ -19,6 +20,8 @@ export function App(){
  const [category,setCategory]=useState<Category>("Overview");
  const [detailOpen,setDetailOpen]=useState(false);
  const [commandNote,setCommandNote]=useState<string>();
+ const [mainTab,setMainTab]=useState<MainTab>("Camp");
+ const researchDef={id:"fire-tools",name:"Fire & Primitive Tools",description:"Controlled fire, stone tools and the first reliable craft techniques.",cost:24,prerequisites:[] as string[]};
  const [,refresh]=useState(0);
  const selected=sim.state.citizens[selectedId]??sim.state.citizens[sim.state.founders.kingId];
 
@@ -32,8 +35,8 @@ export function App(){
    const task=window.prompt("Task instruction","Gather food");
    if(task)execute(()=>sim.orderTask(selected,task));
  };
- const build=()=>execute(()=>sim.orderBuild(selected,"first shelter"));
- const research=()=>execute(()=>sim.orderResearch(selected,"fire and primitive tools"));
+ const build=()=>execute(()=>sim.startBuilding(selected,"shelter","Shelter","A first permanent shelter.",12));
+ const research=()=>execute(()=>sim.startResearch(selected,researchDef));
  const search=()=>execute(()=>sim.orderSearch(selected,"nearby area"));
  const breedPlayer=()=>execute(()=>sim.breedWith(selected,selected.sex==="male"?sim.state.citizens[sim.state.founders.queenId]:sim.state.citizens[sim.state.founders.kingId]));
  const breedNpc=()=>{const partner=sim.livingCitizens.find(c=>c.id!==selected.id&&c.sex!==selected.sex&&sim.canReproduce(c));if(!partner){setCommandNote("No eligible opposite-sex NPC is available.");return}execute(()=>sim.breedWith(selected,partner))};
@@ -67,7 +70,7 @@ export function App(){
     <div className="needs-legend"><span className="dot good"/><span>Supplies automatic</span><span className="dot gold"/><span>Priority {selected.needPriority}</span></div>
   </section>
 
-  <section className="stage">
+  {mainTab==="Camp"&&<section className="stage">
     <div className="scene">
       <div className="scene-copy">
         <span className="label">FOUNDERS' CAMP</span>
@@ -84,7 +87,13 @@ export function App(){
       <div className="roster-list">{sim.livingCitizens.map(c=><button className={"roster-item "+(selected.id===c.id?"selected":"")} key={c.id} onClick={()=>select(c.id)}><img src={portraitFor(c)}/><span><b>{c.name}</b><small>{roleFor(c)} · {c.ageYears} years</small><em>{formatCommand(c)}</em></span><i>›</i></button>)}</div>
       <div className="auto-box"><span className="auto-icon">✧</span><div><b>Needs are autonomous</b><small>Food, water and basic necessities are handled automatically when supplies exist.</small></div></div>
     </aside>
-  </section>
+  </section>}
+
+  {mainTab==="Resources"&&<section className="main-panel panel"><div className="main-panel-head"><span className="label">STOCKPILE</span><h1>Resources</h1><p>Unassigned adults automatically become workers.</p></div><div className="resource-cards">{(["food","water","wood","stone"] as const).map(resource=><div className="resource-big" key={resource}><span>{resource}</span><strong>{sim.state.resources[resource]}</strong><small>{resource==="food"?"Gathering & hunting":resource==="water"?"Fetching water":"Gathering "+resource}</small></div>)}</div><div className="production-box"><div><span className="label">WORKFORCE</span><h2>Automatic gathering</h2></div><strong>{sim.getIdleWorkers().length} available</strong><p>Citizens with no specific order rotate through food, water, wood and stone. Specific orders take priority over worker duty.</p></div><div className="build-list">{sim.state.buildings.map(project=><div className="project-row" key={project.id}><div><b>{project.name}</b><small>{project.workDone} / {project.workRequired} work · {project.workerIds.length} workers · {project.completedTick!==undefined?"Complete":sim.estimateBuildYears(project.workRequired-project.workDone,Math.max(1,project.workerIds.length))+"y remaining at current crew"}</small></div><span>{project.completedTick!==undefined?"Complete":"Building"}</span></div>)}</div></section>}
+
+  {mainTab==="Research"&&<section className="main-panel panel"><div className="main-panel-head"><span className="label">KNOWLEDGE</span><h1>Research</h1><p>Research is a shared project. Additional researchers accelerate progress.</p></div><div className="research-card"><div><span className="label">AVAILABLE</span><h2>{researchDef.name}</h2><p>{researchDef.description}</p></div><button onClick={()=>execute(()=>sim.startResearch(selected,researchDef))}>Assign {selected.name}</button></div>{sim.state.researchProjects.map(project=><div className="project-row" key={project.id}><div><b>{project.name}</b><small>{project.researchDone} / {project.researchRequired} research · {project.researcherIds.length} researchers</small></div><span>{project.completedTick!==undefined?"Complete":"In progress"}</span></div>)}{sim.state.completedResearch.length>0&&<div className="completed-research">Completed research: {sim.state.completedResearch.join(", ")}</div>}</section>}
+
+  {mainTab==="People"&&<section className="main-panel panel"><div className="main-panel-head"><span className="label">PEOPLE</span><h1>Citizens</h1><p>Specific orders override automatic worker duty.</p></div><div className="people-grid">{sim.livingCitizens.map(c=><button className="people-tile" key={c.id} onClick={()=>{select(c.id);setMainTab("Camp")}}><img src={portraitFor(c)}/><span><b>{c.name}</b><small>{roleFor(c)} · {formatCommand(c)}</small></span></button>)}</div></section>}
 
   {detailOpen&&<div className="sheet-backdrop" onClick={()=>setDetailOpen(false)}>
     <section className="character-sheet" onClick={e=>e.stopPropagation()}>
@@ -109,6 +118,6 @@ export function App(){
     </section>
   </div>}
 
-  <nav className="mobile-nav"><button className="active">◫<span>Camp</span></button><button>♙<span>People</span></button><button>◇<span>Research</span></button><button>≡<span>Chronicle</span></button></nav>
+  <div className="floating-advance"><button onClick={advance}>Advance 1 year <b>→</b></button></div><nav className="mobile-nav">{([["Camp","◫"],["People","♙"],["Resources","◈"],["Research","◇"]] as [MainTab,string][]).map(([tab,icon])=><button className={mainTab===tab?"active":""} key={tab} onClick={()=>{setMainTab(tab);setDetailOpen(false)}}>{icon}<span>{tab}</span></button>)}</nav>
  </main>;
 }
