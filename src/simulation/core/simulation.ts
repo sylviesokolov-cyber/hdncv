@@ -95,7 +95,9 @@ export class Simulation {
     const founderOrigin=parentA.founder?(parentA.genome.founderOrigin):parentB.founder?(parentB.genome.founderOrigin):undefined;
     const ids=parentA.founder||parentB.founder?parentA.founder?parentA.genome.geneticTechIds:parentB.genome.geneticTechIds:[];
     const child:Citizen={id:"c_"+this.state.nextCitizenNumber++,name:childSex==="male"?"Son":"Daughter",sex:childSex,generation:Math.max(parentA.generation,parentB.generation)+1,birthTick:this.state.tick,founder:false,genome:{longevity:choose(parentA.genome.longevity,parentB.genome.longevity),diseaseResistance:choose(parentA.genome.diseaseResistance,parentB.genome.diseaseResistance),strength:choose(parentA.genome.strength,parentB.genome.strength),endurance:choose(parentA.genome.endurance,parentB.genome.endurance),intelligence:choose(parentA.genome.intelligence,parentB.genome.intelligence),fertility:choose(parentA.genome.fertility,parentB.genome.fertility),learning:choose(parentA.genome.learning,parentB.genome.learning),founderOrigin,geneticTechIds:[...ids]},lifeStage:"infant",ageYears:0,health:100,hunger:0,thirst:0,fatigue:0,parentIds:[parentA.id,parentB.id],childIds:[],royalGeneticHeritage:Boolean(parentA.founder||parentB.founder||parentA.royalGeneticHeritage||parentB.royalGeneticHeritage)};
-    this.state.citizens[child.id]=child; parentA.childIds.push(child.id); parentB.childIds.push(child.id);
+    this.state.citizens[child.id]=child;
+    this.state.citizens[parentA.id].childIds.push(child.id);
+    this.state.citizens[parentB.id].childIds.push(child.id);
     this.state.chronicle.push(child.name+" was born to "+parentA.name+" and "+parentB.name+".");
     return child;
   }
