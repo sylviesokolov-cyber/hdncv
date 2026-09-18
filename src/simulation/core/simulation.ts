@@ -1,5 +1,6 @@
-import type {Citizen,CitizenId,Genome,GeneticTechnology,LifeStage,Pregnancy,SimulationState,Sex,CitizenOrder,OrderKind,BuildingProject,ResearchDefinition,ResearchProject} from "./types";
+import type {Citizen,CitizenId,Genome,GeneticTechnology,LifeStage,Pregnancy,SimulationState,Sex,CitizenOrder,OrderKind,BuildingProject,ResearchDefinition,ResearchProject,TechnologyDefinition,BuildingDefinition} from "./types";
 import {SeededRng} from "./rng";
+import {BUILDINGS,TECHNOLOGIES} from "./civilization";
 
 const stage=(age:number):LifeStage=>age<2?"infant":age<8?"child":age<15?"adolescent":age<40?"adult":age<65?"matureAdult":"elder";
 const GESTATION_YEARS=1;
@@ -204,12 +205,22 @@ export class Simulation {
 
   estimateBuildYears(workRequired:number,workerCount:number):number { return workerCount>0?Math.max(1,Math.ceil(workRequired/(workerCount*3))):Infinity; }
 
+  getTechnology(id:string):TechnologyDefinition|undefined { return TECHNOLOGIES.find(t=>t.id===id); }
+  getBuildingDefinition(id:string):BuildingDefinition|undefined { return BUILDINGS.find(b=>b.id===id); }
+  isTechnologyComplete(id:string):boolean { return this.state.completedResearch.includes(id); }
+  isTechnologyAvailable(id:string):boolean {
+    const tech=this.getTechnology(id);
+    return Boolean(tech && !this.isTechnologyComplete(id) && tech.prerequisites.every(p=>this.isTechnologyComplete(p)));
+  }
+
   startBuilding(citizen:Citizen,buildingId:string,name:string,description:string,workRequired=12):BuildingProject {
     this.requireAdult(citizen);
+    const definition=this.getBuildingDefinition(buildingId);
+    if(definition && !this.isTechnologyComplete(definition.requiredTechId))throw new Error("This building is locked by an undiscovered technology.");
     const existing=this.state.buildings.find(b=>b.id===buildingId&&b.completedTick===undefined);
     const project=existing??{id:buildingId,name,description,workRequired,workDone:0,startedTick:this.state.tick,workerIds:[]};
     if(!existing){
-      const woodCost=buildingId==="shelter"?10:5, stoneCost=buildingId==="shelter"?4:2;
+      const woodCost=definition?.woodCost??(buildingId==="shelter"?10:5), stoneCost=definition?.stoneCost??(buildingId==="shelter"?4:2);
       if(this.state.resources.wood<woodCost||this.state.resources.stone<stoneCost)throw new Error("Not enough materials to start this building.");
       this.state.resources.wood-=woodCost;this.state.resources.stone-=stoneCost;this.state.buildings.push(project);
     }
@@ -236,6 +247,15 @@ export class Simulation {
     if(!project.researcherIds.includes(citizen.id))project.researcherIds.push(citizen.id);
     this.setOrder(citizen,"research","Researching "+research.name);
     return project;
+  }
+
+  startResearchForAvailableWorker(technologyId:string):ResearchProject {
+    const tech=this.getTechnology(technologyId);
+    if(!tech)throw new Error("Technology not found.");
+    if(!this.isTechnologyAvailable(technologyId))throw new Error("Technology is locked or already researched.");
+    const worker=this.getAvailableWorkers()[0];
+    if(!worker)throw new Error("No free worker is available to research this technology.");
+    return this.startResearch(worker,{id:tech.id,name:tech.name,description:tech.description,cost:tech.cost,prerequisites:tech.prerequisites,branch:tech.branch,era:tech.era,unlocksBuildingIds:tech.unlocksBuildingIds});
   }
 
   addResearcher(citizen:Citizen,researchId:string):ResearchProject {
